@@ -1,0 +1,74 @@
+name:               aip
+version:            0.0.1
+license:            BSD3
+license-file:       LICENSE
+author:             Tony Morris <ʇǝu˙sıɹɹoɯʇ@ןןǝʞsɐɥ>
+maintainer:         Tony Morris
+copyright:          Tony Morris (c) 2017
+synopsis:           Aeronautical Information Package (AIP)
+category:           Data, Aviation
+description:        Document managament for the airservices Aeronautical Information Package (AIP)
+homepage:           https://github.com/tonymorris/aip
+bug-reports:        https://github.com/tonymorris/aip/issues
+cabal-version:      >= 1.10
+build-type:         Custom
+extra-source-files: changelog, todo.md
+
+source-repository   head
+  type:             git
+  location:         git@github.com:tonymorris/aip.git
+
+flag                small_base
+  description:      Choose the new, split-up base package.
+
+library
+  default-language:
+                    Haskell2010
+
+  build-depends:
+                    base >= 4.8 && <= 6
+                    , HTTP
+                    , network-uri
+                    , tagsoup
+                    , tagsoup-selection
+                    , transformers
+                    
+  ghc-options:
+                    -Wall
+
+  default-extensions:
+  
+                    NoImplicitPrelude
+
+  hs-source-dirs:
+                    src
+
+  exposed-modules:
+                    Data.Aviation.Aip
+
+test-suite doctests
+  type:
+                    exitcode-stdio-1.0
+
+  main-is:
+                    doctests.hs
+
+  default-language:
+                    Haskell2010
+
+  build-depends:
+                    base < 5 && >= 3
+                    , doctest >= 0.9.7
+                    , filepath >= 1.3
+                    , directory >= 1.1
+                    , QuickCheck >= 2.0
+                    , template-haskell >= 2.8
+                    , parsec >= 3.1
+                    , quickcheck-text
+
+  ghc-options:
+                    -Wall
+                    -threaded
+
+  hs-source-dirs:
+                    test
