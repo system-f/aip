@@ -10,7 +10,7 @@ category:           Data, Aviation
 description:       
   <<http://i.imgur.com/uZnp9ke.png>>
   .
-  Document managament for the airservices Aeronautical Information Package (AIP).
+  Document management for the airservices Aeronautical Information Package (AIP).
 homepage:           https://github.com/qfpl/aip
 bug-reports:        https://github.com/qfpl/aip/issues
 cabal-version:      >= 1.10
