@@ -23,6 +23,7 @@ import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx)
 import Data.Aviation.Aip.Ersa(Ersa(Ersa))
 import Data.Aviation.Aip.Ersas(Ersas(Ersas), parseAipTree)
 import Data.Aviation.Aip.HttpRequest(requestAipContents, aipRequestGet)
+import Network.BufferType(BufferType)
 import Papa
 
 newtype AipDocuments ty =
@@ -49,9 +50,10 @@ requestAipDocuments errlog outlog (AipDocuments ds) =
   (>>= maybeToList) <$> mapM (requestAipDocument errlog outlog) ds
 
 getAipDocuments ::
+  BufferType ty =>
   FilePath -- output directory 
   -> Ersas
-  -> AipDocuments ByteString
+  -> AipDocuments ty
 getAipDocuments dir (Ersas ersas) =
   let simpleAipDocuments =
         [

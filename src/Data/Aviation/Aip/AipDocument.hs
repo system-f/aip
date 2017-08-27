@@ -11,7 +11,7 @@ module Data.Aviation.Aip.AipDocument(
 
 import Data.ByteString(ByteString)
 import qualified Data.ByteString as ByteString(writeFile)
-import Network.HTTP(Request, HasHeaders(..), rqURI)
+import Network.HTTP(Request, HasHeaders(getHeaders, setHeaders), rqURI)
 import System.Directory(createDirectoryIfMissing)
 import System.FilePath(takeDirectory)
 import System.IO(Handle, hPutStrLn)
