@@ -6,6 +6,7 @@
 
 module Data.Aviation.Aip.AipDocuments(
   AipDocuments(..)
+, distributeAipDocuments
 , writeAipDocuments
 , requestAipDocuments
 , getAipDocuments
@@ -14,9 +15,10 @@ module Data.Aviation.Aip.AipDocuments(
 import Control.Monad.IO.Class(liftIO)
 import Data.ByteString(ByteString)
 import Data.Maybe(maybeToList)
+import System.Directory(createDirectoryIfMissing)
 import System.FilePath((</>))
-import System.IO(Handle)
-import Control.Monad.Trans.Except(ExceptT)
+import System.IO(Handle, IO, IOMode(AppendMode), withFile)
+import Control.Monad.Trans.Except(ExceptT, runExceptT)
 import Data.Aviation.Aip.AipDate(uriAipDate)
 import Data.Aviation.Aip.AipDocument(AipDocument(AipDocument), requestAipDocument)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx)
@@ -32,6 +34,21 @@ newtype AipDocuments ty =
   deriving Show
 
 makeWrapped ''AipDocuments
+
+-- | Writes three log files; `err.log`, `out.log`, `aip`.
+distributeAipDocuments ::
+  FilePath -- ^ log error
+  -> FilePath -- ^ log out
+  -> IO [FilePath]
+distributeAipDocuments adir ldir=
+  let wlogfile f =
+        liftIO . withFile (ldir </> f) AppendMode
+  in  do  liftIO (mapM_ (createDirectoryIfMissing True) [adir, ldir])
+          wlogfile "err.log" (\herr ->
+            wlogfile "out.log" (\hout ->
+              do  p <- runExceptT (writeAipDocuments herr hout adir)
+                  mapM_ (\qs -> appendFile (ldir </> "aip") (qs >>= \q -> q ++ "\n")) p
+                  pure (either (const []) id p)))
 
 writeAipDocuments ::
     Handle -- ^ log error
