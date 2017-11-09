@@ -26,7 +26,6 @@ main =
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
                           lift (tarDirectories d)
-                          -- createMakeWaitProcessM . tarAip $ d
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
