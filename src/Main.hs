@@ -4,11 +4,13 @@ module Main(
   main
 ) where
 
+import Control.Monad.Trans.Class(MonadTrans(lift))
 import Data.Aviation.Aip.AipDocuments(distributeAipDocuments)
 import Data.Time(UTCTime(utctDay, utctDayTime), TimeOfDay(TimeOfDay), toGregorian, timeToTimeOfDay, getCurrentTime)
 import System.Environment(getArgs)
 import System.IO(IO, hPutStrLn, stderr)
 import Sys.Exit(CreateProcess, procIn, createMakeWaitProcessM, exit)
+import System.Directory(listDirectory, doesDirectoryExist)
 import System.FilePath((</>))
 import Papa
 
@@ -20,23 +22,35 @@ main =
         adir:_ ->
           do  t <- getCurrentTime
               let u = time t
-                  d = adir </> u ++ "UTC"
+                  d = adir </> d ++ "UTC"
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
-                          createMakeWaitProcessM . tarAip $ d
+                          lift (tarDirectories d)
+                          -- createMakeWaitProcessM . tarAip $ d
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
-tarAip ::
+directories ::
   FilePath
-  -> CreateProcess
-tarAip d =
-  procIn d "tar"
-    [
-      "-zcvf"
-    , "aip.tar.gz"
-    , "aip"
-    ]
+  -> IO [FilePath]
+directories p =
+  listDirectory p >>= \ds -> filterM doesDirectoryExist ((p </>) <$> ds)
+
+tarDirectories ::
+  FilePath
+  -> IO ()
+tarDirectories =
+  let tarDirectories' p =
+        let tarDirectory d =
+              procIn d "tar"
+                [
+                  "-zcvf"
+                , d ++ ".tar.gz"
+                , d
+                ]
+        in  do  ds <- lift (directories p)
+                mapM_ (\d -> createMakeWaitProcessM (tarDirectory d) >> tarDirectories' d) ds
+  in  exit . tarDirectories'
 
 linkLatest ::
   FilePath
