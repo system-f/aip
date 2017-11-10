@@ -9,7 +9,7 @@ import Data.Aviation.Aip.AipDocuments(distributeAipDocuments)
 import Data.Time(UTCTime(utctDay, utctDayTime), TimeOfDay(TimeOfDay), toGregorian, timeToTimeOfDay, getCurrentTime)
 import System.Environment(getArgs)
 import System.IO(IO, hPutStrLn, stderr)
-import Sys.Exit(CreateProcess, procIn, createMakeWaitProcessM, exit)
+import Sys.Exit(CreateProcess, ExitCodeM, procIn, createMakeWaitProcessM, exit)
 import System.Directory(listDirectory, doesDirectoryExist)
 import System.FilePath((</>), splitFileName)
 import Papa
@@ -25,7 +25,8 @@ main =
                   d = adir </> u ++ "UTC"
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
-                          lift (tarDirectories d)
+                          tarDirectories d
+
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
@@ -37,7 +38,7 @@ directories p =
 
 tarDirectories ::
   FilePath
-  -> IO ()
+  -> ExitCodeM IO
 tarDirectories =
   let tarDirectories' p =
         let tarDirectory d =
@@ -52,7 +53,7 @@ tarDirectories =
                     ]
         in  do  ds <- lift (directories p)
                 mapM_ (\d -> createMakeWaitProcessM (tarDirectory d) >> tarDirectories' d) ds
-  in  exit . tarDirectories'
+  in  tarDirectories'
 
 linkLatest ::
   FilePath
