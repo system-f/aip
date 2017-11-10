@@ -10,7 +10,7 @@ import Data.Time(UTCTime(utctDay, utctDayTime), TimeOfDay(TimeOfDay), toGregoria
 import System.Environment(getArgs)
 import System.IO(IO, hPutStrLn, stderr)
 import Sys.Exit(CreateProcess, ExitCodeM, procIn, createMakeWaitProcessM, exit)
-import System.Directory(listDirectory, doesDirectoryExist)
+import System.Directory(listDirectory, doesDirectoryExist, doesFileExist)
 import System.FilePath((</>), splitFileName)
 import Papa
 
@@ -25,8 +25,7 @@ main =
                   d = adir </> u ++ "UTC"
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
-                          tarDirectories d
-
+                          tarDirectories d d
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
@@ -38,10 +37,14 @@ directories p =
 
 tarDirectories ::
   FilePath
+  -> FilePath
   -> ExitCodeM IO
-tarDirectories =
-  let tarDirectories' p =
-        let tarDirectory d =
+tarDirectories d1 d2 =
+  let tarDirectories' r s =
+        let tarDirectory ::
+              FilePath
+              -> CreateProcess
+            tarDirectory d =
               let (e, g) = splitFileName d
               in  procIn d "tar"
                     [
@@ -51,9 +54,15 @@ tarDirectories =
                     , d ++ ".tar.gz"
                     , g
                     ]
-        in  do  ds <- lift (directories p)
-                mapM_ (\d -> createMakeWaitProcessM (tarDirectory d) >> tarDirectories' d) ds
-  in  tarDirectories'
+            tarDirectory' ::
+              FilePath
+              -> ExitCodeM IO
+            tarDirectory' d =
+              do  p <- lift (doesFileExist (d ++ ".tar.gz"))
+                  p `unless` createMakeWaitProcessM (tarDirectory d)
+        in  do  ds <- lift (directories r)
+                mapM_ (\d -> tarDirectory' (r </> d) >> tarDirectories' (r </> d) s) ds
+  in  tarDirectories' d1 d2
 
 linkLatest ::
   FilePath
