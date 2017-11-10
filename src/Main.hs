@@ -11,7 +11,7 @@ import System.Environment(getArgs)
 import System.IO(IO, hPutStrLn, stderr)
 import Sys.Exit(CreateProcess, procIn, createMakeWaitProcessM, exit)
 import System.Directory(listDirectory, doesDirectoryExist)
-import System.FilePath((</>))
+import System.FilePath((</>), splitFileName)
 import Papa
 
 main ::
@@ -22,7 +22,7 @@ main =
         adir:_ ->
           do  t <- getCurrentTime
               let u = time t
-                  d = adir </> d ++ "UTC"
+                  d = adir </> u ++ "UTC"
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
                           lift (tarDirectories d)
@@ -41,12 +41,15 @@ tarDirectories ::
 tarDirectories =
   let tarDirectories' p =
         let tarDirectory d =
-              procIn d "tar"
-                [
-                  "-zcvf"
-                , d ++ ".tar.gz"
-                , d
-                ]
+              let (e, g) = splitFileName d
+              in  procIn d "tar"
+                    [
+                      "-C"
+                    , e
+                    , "-zcvf"
+                    , d ++ ".tar.gz"
+                    , g
+                    ]
         in  do  ds <- lift (directories p)
                 mapM_ (\d -> createMakeWaitProcessM (tarDirectory d) >> tarDirectories' d) ds
   in  exit . tarDirectories'
