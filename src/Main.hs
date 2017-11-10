@@ -43,25 +43,27 @@ tarDirectories d1 d2 =
   let tarDirectories' r s =
         let tarDirectory ::
               FilePath
+              -> FilePath
               -> CreateProcess
-            tarDirectory d =
-              let (e, g) = splitFileName d
+            tarDirectory d e =
+              let (k, g) = splitFileName d
               in  procIn d "tar"
                     [
                       "-C"
-                    , e
+                    , k
                     , "-zcvf"
                     , d ++ ".tar.gz"
                     , g
                     ]
             tarDirectory' ::
               FilePath
+              -> FilePath
               -> ExitCodeM IO
-            tarDirectory' d =
+            tarDirectory' d e =
               do  p <- lift (doesFileExist (d ++ ".tar.gz"))
-                  p `unless` createMakeWaitProcessM (tarDirectory d)
+                  p `unless` createMakeWaitProcessM (tarDirectory d e)
         in  do  ds <- lift (directories r)
-                mapM_ (\d -> tarDirectory' (r </> d) >> tarDirectories' (r </> d) s) ds
+                mapM_ (\d -> tarDirectory' (r </> d) s >> tarDirectories' (r </> d) s) ds
   in  tarDirectories' d1 d2
 
 linkLatest ::
