@@ -67,8 +67,7 @@ tarDirectories d1 d2 =
                 mapM_ (\d -> 
                   let r' = r </> d
                       s' = s </> d
-                  in  do  lift (appendFile "/tmp/ll" ("r " ++ r ++ " s " ++ s ++ " d " ++ d ++ "\n"))
-                          (r' == s) `unless` tarDirectory' r' s'
+                  in  do  (r' == s) `unless` tarDirectory' r' s'
                           tarDirectories' r' s'
                       ) ds
   in  tarDirectories' d1 d2
