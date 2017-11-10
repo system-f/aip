@@ -11,7 +11,7 @@ import System.Environment(getArgs)
 import System.IO(IO, hPutStrLn, stderr)
 import Sys.Exit(CreateProcess, ExitCodeM, procIn, createMakeWaitProcessM, exit)
 import System.Directory(listDirectory, doesDirectoryExist, doesFileExist, createDirectoryIfMissing)
-import System.FilePath((</>), takeDirectory, splitFileName)
+import System.FilePath((</>), takeDirectory, splitFileName, takeExtension)
 import Papa
 
 main ::
@@ -28,6 +28,22 @@ main =
                           tarDirectories d (d </> "download")
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
+
+-- convert -density 100 ~/Desktop/aip/aip/current/aipchart/vtc/Brisbane_Sunshine_VTC.pdf /tmp/x2.png
+
+pdffiles ::
+  FilePath
+  -> IO [FilePath]
+pdffiles p =
+  do  x <- listDirectory p
+      let x' = ((p </>) <$> x)
+      g <- filterM (\f -> (\b -> b && takeExtension f == ".pdf") <$> doesFileExist f) x'
+      d <- filterM doesDirectoryExist x'
+      e <- mapM pdffiles d
+      pure (g ++ concat e)
+
+undefined = undefined
+
 
 directories ::
   FilePath
