@@ -10,8 +10,8 @@ import Data.Time(UTCTime(utctDay, utctDayTime), TimeOfDay(TimeOfDay), toGregoria
 import System.Environment(getArgs)
 import System.IO(IO, hPutStrLn, stderr)
 import Sys.Exit(CreateProcess, ExitCodeM, procIn, createMakeWaitProcessM, exit)
-import System.Directory(listDirectory, doesDirectoryExist, doesFileExist)
-import System.FilePath((</>), splitFileName)
+import System.Directory(listDirectory, doesDirectoryExist, doesFileExist, createDirectoryIfMissing)
+import System.FilePath((</>), takeDirectory, splitFileName)
 import Papa
 
 main ::
@@ -25,7 +25,7 @@ main =
                   d = adir </> u ++ "UTC"
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
-                          tarDirectories d d
+                          tarDirectories d (d </> "download")
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
@@ -33,7 +33,7 @@ directories ::
   FilePath
   -> IO [FilePath]
 directories p =
-  listDirectory p >>= \ds -> filterM doesDirectoryExist ((p </>) <$> ds)
+  listDirectory p >>= \ds -> filterM (\d -> doesDirectoryExist (p </> d)) ds
 
 tarDirectories ::
   FilePath
@@ -52,7 +52,7 @@ tarDirectories d1 d2 =
                       "-C"
                     , k
                     , "-zcvf"
-                    , d ++ ".tar.gz"
+                    , e ++ ".tar.gz"
                     , g
                     ]
             tarDirectory' ::
@@ -60,10 +60,17 @@ tarDirectories d1 d2 =
               -> FilePath
               -> ExitCodeM IO
             tarDirectory' d e =
-              do  p <- lift (doesFileExist (d ++ ".tar.gz"))
+              do  lift (createDirectoryIfMissing True (takeDirectory e))
+                  p <- lift (doesFileExist (e ++ ".tar.gz"))
                   p `unless` createMakeWaitProcessM (tarDirectory d e)
         in  do  ds <- lift (directories r)
-                mapM_ (\d -> tarDirectory' (r </> d) s >> tarDirectories' (r </> d) s) ds
+                mapM_ (\d -> 
+                  let r' = r </> d
+                      s' = s </> d
+                  in  do  lift (appendFile "/tmp/ll" ("r " ++ r ++ " s " ++ s ++ " d " ++ d ++ "\n"))
+                          (r' == s) `unless` tarDirectory' r' s'
+                          tarDirectories' r' s'
+                      ) ds
   in  tarDirectories' d1 d2
 
 linkLatest ::
