@@ -34,16 +34,19 @@ main =
 pdffiles ::
   FilePath
   -> IO [FilePath]
-pdffiles p =
-  do  x <- listDirectory p
-      let x' = ((p </>) <$> x)
-      g <- filterM (\f -> (\b -> b && takeExtension f == ".pdf") <$> doesFileExist f) x'
-      d <- filterM doesDirectoryExist x'
-      e <- mapM pdffiles d
-      pure (g ++ concat e)
-
-undefined = undefined
-
+pdffiles q =
+  let pdffiles' ::
+        FilePath
+        -> FilePath
+        -> IO [FilePath]
+      pdffiles' q p =
+        do  x <- listDirectory (q </> p)
+            let x' = ((p </>) <$> x)
+            g <- filterM (\f -> (&& takeExtension (q </> f) == ".pdf") <$> doesFileExist (q </> f)) x'
+            d <- filterM (\f -> doesDirectoryExist (q </> f)) x'
+            e <- mapM (pdffiles' q) d
+            pure (g ++ concat e)
+  in pdffiles' q ""
 
 directories ::
   FilePath
