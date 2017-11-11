@@ -31,10 +31,11 @@ main =
 
 -- convert -density 100 ~/Desktop/aip/aip/current/aipchart/vtc/Brisbane_Sunshine_VTC.pdf /tmp/x2.png
 
+
 pdffiles ::
   FilePath
   -> IO [FilePath]
-pdffiles q =
+pdffiles v =
   let pdffiles' ::
         FilePath
         -> FilePath
@@ -46,7 +47,7 @@ pdffiles q =
             d <- filterM (\f -> doesDirectoryExist (q </> f)) x'
             e <- mapM (pdffiles' q) d
             pure (g ++ concat e)
-  in pdffiles' q ""
+  in pdffiles' v ""
 
 directories ::
   FilePath
