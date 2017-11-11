@@ -21,8 +21,8 @@ main =
       case a of
         adir:_ ->
           do  t <- getCurrentTime
-              let u = time t
-                  d = adir </> u ++ "UTC"
+              let u = time t ++ "UTC"
+                  d = adir </> u
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
                           tarDirectories d (d </> "download")
