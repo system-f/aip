@@ -22,15 +22,42 @@ main =
         adir:_ ->
           do  t <- getCurrentTime
               let u = time t ++ "UTC"
-                  d = adir </> "20171109-065348UTC" -- u
-              -- void (distributeAipDocuments (d </> "aip") (d </> "log"))
+                  d = adir </> u
+              void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
                           tarDirectories d (d </> "download")
+                          m <- lift (pdffiles adir)
+                          mapM_ (\(dty, ext, n) -> convert' dty d ext n) ((,,) <$> [100, 400] <*> ["jpg", "png"] <*> m)
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
--- convert -density 100 ~/Desktop/aip/aip/current/aipchart/vtc/Brisbane_Sunshine_VTC.pdf /tmp/x2.png
+convert' ::
+  Int
+  -> FilePath -- in directory
+  -> String -- extension
+  -> FilePath -- pdf
+  -> ExitCodeM IO
+convert' dty d ext p =
+  let o = d </> "convert" </> p ++ ".density" ++ show dty ++ "." ++ ext
+  in  do  lift (createDirectoryIfMissing True (takeDirectory o))
+          createMakeWaitProcessM (convert dty d p o)
 
+undefined = undefined
+
+convert ::
+  Int
+  -> FilePath -- in directory
+  -> FilePath -- pdf
+  -> FilePath -- image
+  -> CreateProcess
+convert dty d p q =
+  procIn d "convert"
+    [
+      "-density"
+    , show dty
+    , p
+    , q
+    ]
 
 pdffiles ::
   FilePath
