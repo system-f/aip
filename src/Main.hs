@@ -22,12 +22,12 @@ main =
         adir:_ ->
           do  t <- getCurrentTime
               let u = time t ++ "UTC"
-                  d = adir </> u
+                  d = "/home/tmorris/Desktop/aip2" -- adir </> u
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
-                          tarDirectories d (d </> "download")
+                          -- tarDirectories d (d </> "download")
                           m <- lift (pdffiles adir)
-                          mapM_ (\(dty, ext, n) -> convert' dty d ext n) ((,,) <$> [100, 400] <*> ["jpg", "png"] <*> m)
+                          mapM_ (\(dty, ext, n) -> convert' dty d ext n) ((,,) <$> [50, 100, 400] <*> ["jpg", "png"] <*> m)
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
