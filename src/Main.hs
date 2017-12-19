@@ -22,27 +22,25 @@ main =
         adir:_ ->
           do  t <- getCurrentTime
               let u = time t ++ "UTC"
-                  d = "/home/tmorris/Desktop/aip2" -- adir </> u
+                  d = adir </> u
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
               exit $ do   createMakeWaitProcessM . linkLatest adir $ u
-                          -- tarDirectories d (d </> "download")
-                          m <- lift (pdffiles adir)
-                          mapM_ (\(dty, ext, n) -> convert' dty d ext n) ((,,) <$> [50, 100, 400] <*> ["jpg", "png"] <*> m)
+                          tarDirectories d (d </> "download")
+                          m <- lift (pdffiles (d </> "aip"))
+                          mapM_ (\(dty, ext, n) -> convert' dty (d </> "aip") ext n) ((,,) <$> [100, 250] <*> ["png"] <*> m)
         _ ->
           hPutStrLn stderr "<aip-output-directory>"
 
 convert' ::
   Int
-  -> FilePath -- in directory
-  -> String -- extension
-  -> FilePath -- pdf
+  -> FilePath
+  -> String
+  -> FilePath
   -> ExitCodeM IO
 convert' dty d ext p =
-  let o = d </> "convert" </> p ++ ".density" ++ show dty ++ "." ++ ext
-  in  do  lift (createDirectoryIfMissing True (takeDirectory o))
-          createMakeWaitProcessM (convert dty d p o)
-
-undefined = undefined
+  let ot = takeDirectory d </> "convert" </> p ++ ".density" ++ show dty ++ "." ++ ext
+  in  do  lift (createDirectoryIfMissing True (takeDirectory ot))
+          createMakeWaitProcessM (convert dty d p ot)
 
 convert ::
   Int
