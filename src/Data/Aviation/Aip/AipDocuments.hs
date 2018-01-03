@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_HADDOCK prune #-}
 
 module Data.Aviation.Aip.AipDocuments(
   AipDocuments(..)

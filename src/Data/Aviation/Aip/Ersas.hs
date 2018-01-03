@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_HADDOCK prune #-}
 
 module Data.Aviation.Aip.Ersas(
   Ersas(..)

@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_HADDOCK prune #-}
 
 module Data.Aviation.Aip.Day(
   Day(..)

@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_HADDOCK prune #-}
 
 module Data.Aviation.Aip.ConnErrorHttp4xx(
   ConnErrorHttp4xx(..)

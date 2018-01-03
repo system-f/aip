@@ -2,6 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_HADDOCK prune #-}
 
 module Data.Aviation.Aip.AipDocument(
   AipDocument(..)
