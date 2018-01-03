@@ -6,6 +6,9 @@
 /.cabal-sandbox
 /cabal.sandbox.config
 
+# nix
+/result
+
 # Haskell Program Coverage
 /.hpc
 /*.tix
