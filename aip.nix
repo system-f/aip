@@ -1,7 +1,8 @@
-{ mkDerivation, base, bytestring, Crypto, digit, directory, doctest
-, filepath, HTTP, lens, network-uri, papa, parsec, parsers
-, QuickCheck, quickcheck-text, stdenv, sys-process, tagsoup
-, tagsoup-selection, template-haskell, time, transformers
+{ mkDerivation, base, bomradar, bytestring, checkers, digit
+, directory, filepath, HTTP, lens, network-uri, papa, parsec
+, parsers, QuickCheck, stdenv, sys-process, tagsoup
+, tagsoup-selection, tasty, tasty-hunit, tasty-quickcheck, time
+, transformers
 }:
 mkDerivation {
   pname = "aip";
@@ -14,13 +15,13 @@ mkDerivation {
     parsec parsers tagsoup tagsoup-selection transformers
   ];
   executableHaskellDepends = [
-    base bytestring Crypto digit directory filepath HTTP lens
-    network-uri papa parsec parsers sys-process tagsoup
-    tagsoup-selection time transformers
+    base bytestring digit directory filepath HTTP lens network-uri papa
+    parsec parsers sys-process tagsoup tagsoup-selection time
+    transformers
   ];
   testHaskellDepends = [
-    base directory doctest filepath parsec QuickCheck quickcheck-text
-    template-haskell
+    base bomradar checkers lens QuickCheck tasty tasty-hunit
+    tasty-quickcheck
   ];
   homepage = "https://github.com/qfpl/aip";
   description = "Aeronautical Information Package (AIP)";
