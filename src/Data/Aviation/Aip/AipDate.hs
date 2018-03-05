@@ -15,7 +15,7 @@ module Data.Aviation.Aip.AipDate(
 import Data.Aviation.Aip.Day(Day(Day), HasDay(day), parseDay)
 import Data.Aviation.Aip.Month(Month, HasMonth(month), parseMonth)
 import Data.Aviation.Aip.Year(Year(Year), HasYear(year), parseYear)
-import Text.Parser.Char(CharParsing, char)
+import Text.Parser.Char(CharParsing, char, oneOf)
 import Papa
 
 data AipDate =
@@ -34,7 +34,7 @@ parseAipDate ::
   (CharParsing p, Monad p) =>
   p AipDate
 parseAipDate =
-  AipDate <$> parseDay <* char '-' <*> parseMonth <* char '-' <*> parseYear
+  AipDate <$> parseDay <* optional (oneOf "- ") <*> parseMonth <* optional (oneOf "- ") <*> parseYear
 
 instance HasDay AipDate where
   day =

@@ -18,7 +18,7 @@ import Data.Aviation.Aip.Day(HasDay(day, day1, day2))
 import Data.Aviation.Aip.Month(HasMonth(month))
 import Data.Aviation.Aip.Year(HasYear(year, year1, year2, year3, year4))
 import Data.Digit(Digit, HasDigit(hasdigit), parsedigit)
-import Text.Parser.Char(CharParsing, string)
+import Text.Parser.Char(CharParsing, string, char)
 import Papa
 
 data AipHref =
@@ -37,8 +37,9 @@ parseAipHref ::
   (CharParsing p, Monad p) =>
   p AipHref
 parseAipHref =
-  string "aip.asp?pg=" *> 
-  (AipHref <$> parseAipPg <* string "&vdate=" <*> parseAipDate <* string "&ver=" <*> parsedigit)
+  let amp = char '&' <* optional (string "amp;")
+  in  string "aip.asp?pg=" *> 
+        (AipHref <$> parseAipPg <* amp <* string "vdate=" <*> parseAipDate <* amp <* string "ver=" <*> parsedigit)
 
 uriAipHref ::
   HasAipHref s =>
