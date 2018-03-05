@@ -22,8 +22,9 @@ import System.IO(Handle, IO, IOMode(AppendMode), withFile)
 import Control.Monad.Trans.Except(ExceptT, runExceptT)
 import Data.Aviation.Aip.AipDate(uriAipDate)
 import Data.Aviation.Aip.AipDocument(AipDocument(AipDocument), requestAipDocument)
+import Data.Aviation.Aip.AipHref(aiphrefdate)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx)
-import Data.Aviation.Aip.Ersa(Ersa(Ersa))
+import Data.Aviation.Aip.Ersa(ersaHref, ersaDate)
 import Data.Aviation.Aip.Ersas(Ersas(Ersas), parseAipTree)
 import Data.Aviation.Aip.HttpRequest(requestAipContents, aipRequestGet)
 import Network.BufferType(BufferType)
@@ -1205,8 +1206,9 @@ getAipDocuments dir (Ersas ersas) =
       allersa =
         (ersaprelim ++ ersafac ++ ersards) >>= \f -> 
         ["current", "pending"] >>= \q ->
-        ersas >>= \(Ersa _ d) ->
-        let req = concat [q, "/ersa/", f, "_", uriAipDate d, ".pdf"]
+        ersas >>= \er ->
+        let req = [er ^. ersaDate, er ^. ersaHref . aiphrefdate] >>= \d ->
+                    concat [q, "/ersa/", f, "_", uriAipDate d, ".pdf"]
         in pure (AipDocument (aipRequestGet req "") (dir </> req))
       allSimpleAipDocuments =
         simpleAipDocuments >>= \x -> 
