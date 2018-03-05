@@ -1207,8 +1207,8 @@ getAipDocuments dir (Ersas ersas) =
         (ersaprelim ++ ersafac ++ ersards) >>= \f -> 
         ["current", "pending"] >>= \q ->
         ersas >>= \er ->
-        let req = [er ^. ersaDate, er ^. ersaHref . aiphrefdate] >>= \d ->
-                    concat [q, "/ersa/", f, "_", uriAipDate d, ".pdf"]
+        [er ^. ersaDate, er ^. ersaHref . aiphrefdate] >>= \d ->
+        let req = concat [q, "/ersa/", f, "_", uriAipDate d, ".pdf"]
         in pure (AipDocument (aipRequestGet req "") (dir </> req))
       allSimpleAipDocuments =
         simpleAipDocuments >>= \x -> 
