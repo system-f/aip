@@ -15,17 +15,29 @@ import Papa
 
 data Month =
   Jan
+  | JAN
   | Feb
+  | FEB
   | Mar
+  | MAR
   | Apr
+  | APR
   | May
+  | MAY
   | Jun
+  | JUN
   | Jul
+  | JUL
   | Aug
+  | AUG
   | Sep
+  | SEP
   | Oct
+  | OCT
   | Nov
+  | NOV
   | Dec
+  | DEC
   deriving (Eq, Ord, Show)
 
 parseMonth ::
@@ -36,27 +48,27 @@ parseMonth =
     [
       Jan <$ string "Jan"
     , Feb <$ try (string "Feb")
-    , Feb <$ try (string "FEB")
+    , FEB <$ try (string "FEB")
     , Mar <$ try (string "Mar")
-    , Mar <$ try (string "MAR")
+    , MAR <$ try (string "MAR")
     , Apr <$ try (string "Apr")
-    , Apr <$ try (string "APR")
+    , APR <$ try (string "APR")
     , May <$ try (string "May")
-    , May <$ try (string "MAY")
+    , MAY <$ try (string "MAY")
     , Jun <$ try (string "Jun")
-    , Jun <$ try (string "JUN")
+    , JUN <$ try (string "JUN")
     , Jul <$ try (string "Jul")
-    , Jul <$ try (string "JUL")
+    , JUL <$ try (string "JUL")
     , Aug <$ try (string "Aug")
-    , Aug <$ try (string "AUG")
+    , AUG <$ try (string "AUG")
     , Sep <$ try (string "Sep")
-    , Sep <$ try (string "SEP")
+    , SEP <$ try (string "SEP")
     , Oct <$ try (string "Oct")
-    , Oct <$ try (string "OCT")
+    , OCT <$ try (string "OCT")
     , Nov <$ try (string "Nov")
-    , Nov <$ try (string "NOV")
+    , NOV <$ try (string "NOV")
     , Dec <$ try (string "Dec")
-    , Dec <$ try (string "DEC")
+    , DEC <$ try (string "DEC")
     ]
 
 makeClassy ''Month
