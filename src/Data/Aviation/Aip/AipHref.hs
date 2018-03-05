@@ -12,11 +12,11 @@ module Data.Aviation.Aip.AipHref(
 , HasAipHref(..)
 ) where
 
-import Data.Aviation.Aip.AipDate(AipDate, HasAipDate(aipDate), parseAipDate)
+import Data.Aviation.Aip.AipDate(AipDate, HasAipDate(aipDate), parseAipDate, uriAipDate)
 import Data.Aviation.Aip.AipPg(AipPg, HasAipPg(aipPg), parseAipPg, aippg1, aippg2)
-import Data.Aviation.Aip.Day(HasDay(day, day1, day2))
+import Data.Aviation.Aip.Day(HasDay(day))
 import Data.Aviation.Aip.Month(HasMonth(month))
-import Data.Aviation.Aip.Year(HasYear(year, year1, year2, year3, year4))
+import Data.Aviation.Aip.Year(HasYear(year))
 import Data.Digit(Digit, HasDigit(hasdigit), parsedigit)
 import Text.Parser.Char(CharParsing, string, char)
 import Papa
@@ -52,15 +52,7 @@ uriAipHref ahref =
     , show (ahref ^. aipHref . aippg1)
     , show (ahref ^. aipHref . aippg2)
     , "&vdate="
-    , show (ahref ^. aipHref . day1)
-    , show (ahref ^. aipHref . day2)
-    , "-"
-    , show (ahref ^. aipHref . month)
-    , "-"
-    , show (ahref ^. aipHref . year1)
-    , show (ahref ^. aipHref . year2)
-    , show (ahref ^. aipHref . year3)
-    , show (ahref ^. aipHref . year4)
+    , uriAipDate (ahref ^. aipHref . aiphrefdate)
     , "&ver="
     , show (ahref ^. aipHref . hasdigit)
     ]
