@@ -34,7 +34,8 @@ parseAipDate ::
   (CharParsing p, Monad p) =>
   p AipDate
 parseAipDate =
-  AipDate <$> parseDay <* optional (oneOf "- ") <*> parseMonth <* optional (oneOf "- ") <*> parseYear
+  let separator = optional (oneOf "- ")
+  in  AipDate <$> parseDay <* separator <*> parseMonth <* separator <*> parseYear
 
 instance HasDay AipDate where
   day =
