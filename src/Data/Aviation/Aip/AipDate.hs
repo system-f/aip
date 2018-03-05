@@ -15,7 +15,7 @@ module Data.Aviation.Aip.AipDate(
 import Data.Aviation.Aip.Day(Day(Day), HasDay(day), parseDay)
 import Data.Aviation.Aip.Month(Month, HasMonth(month), parseMonth)
 import Data.Aviation.Aip.Year(Year(Year), HasYear(year), parseYear)
-import Text.Parser.Char(CharParsing, char, oneOf)
+import Text.Parser.Char(CharParsing, oneOf)
 import Papa
 
 data AipDate =
