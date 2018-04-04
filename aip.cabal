@@ -14,7 +14,7 @@ description:
 homepage:           https://github.com/qfpl/aip
 bug-reports:        https://github.com/qfpl/aip/issues
 cabal-version:      >= 1.10
-build-type:         Custom
+build-type:         Simple
 extra-source-files: changelog
 
 source-repository   head
