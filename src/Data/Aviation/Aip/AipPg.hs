@@ -7,7 +7,7 @@
 
 module Data.Aviation.Aip.AipPg where
 
-import Data.Digit(Digit, parsedigit)
+import Data.Digit(Digit, parseDecimal)
 import Text.Parser.Char(CharParsing, string)
 import Papa
 
@@ -25,7 +25,7 @@ parseAipPg ::
   (CharParsing p, Monad p) =>
   p AipPg
 parseAipPg =
-  AipPg <$> parsedigit <*> parsedigit
+  AipPg <$> parseDecimal <*> parseDecimal
 
 parseAipPgHref ::
   (CharParsing p, Monad p) =>

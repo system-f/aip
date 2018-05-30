@@ -11,7 +11,7 @@ module Data.Aviation.Aip.Year(
 , HasYear(..)
 ) where
 
-import Data.Digit(Digit, parsedigit)
+import Data.Digit(Digit, parseDecimal)
 import Text.Parser.Char(CharParsing)
 import Papa
 
@@ -32,6 +32,6 @@ parseYear ::
   (CharParsing p, Monad p) =>
   p Year
 parseYear =
-  Year <$> parsedigit <*> parsedigit <*> parsedigit <*> parsedigit
+  Year <$> parseDecimal <*> parseDecimal <*> parseDecimal <*> parseDecimal
 
 makeClassy ''Year

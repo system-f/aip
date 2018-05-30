@@ -17,7 +17,7 @@ import Data.Aviation.Aip.AipPg(AipPg, HasAipPg(aipPg), parseAipPg, aippg1, aippg
 import Data.Aviation.Aip.Day(HasDay(day))
 import Data.Aviation.Aip.Month(HasMonth(month))
 import Data.Aviation.Aip.Year(HasYear(year))
-import Data.Digit(Digit, HasDigit(hasdigit), parsedigit)
+import Data.Digit(Digit, parseDecimal)
 import Text.Parser.Char(CharParsing, string, char)
 import Papa
 
@@ -39,7 +39,7 @@ parseAipHref ::
 parseAipHref =
   let amp = char '&' <* optional (string "amp;")
   in  string "aip.asp?pg=" *> 
-        (AipHref <$> parseAipPg <* amp <* string "vdate=" <*> parseAipDate <* amp <* string "ver=" <*> parsedigit)
+        (AipHref <$> parseAipPg <* amp <* string "vdate=" <*> parseAipDate <* amp <* string "ver=" <*> parseDecimal)
 
 uriAipHref ::
   HasAipHref s =>
@@ -54,7 +54,7 @@ uriAipHref ahref =
     , "&vdate="
     , uriAipDate (ahref ^. aipHref . aiphrefdate)
     , "&ver="
-    , show (ahref ^. aipHref . hasdigit)
+    , show (ahref ^. aipHref . aiphrefversion)
     ]
 
 instance HasAipPg AipHref where
@@ -64,10 +64,6 @@ instance HasAipPg AipHref where
 instance HasAipDate AipHref where
   aipDate =
     aiphrefdate . aipDate
-    
-instance HasDigit AipHref where
-  hasdigit =
-    aiphrefversion . hasdigit
     
 instance HasDay AipHref where
   day =

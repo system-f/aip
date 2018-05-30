@@ -11,7 +11,7 @@ module Data.Aviation.Aip.Day(
 , HasDay(..)
 ) where
 
-import Data.Digit(Digit, parsedigit)
+import Data.Digit(Digit, parseDecimal)
 import Text.Parser.Char(CharParsing)
 import Papa
 
@@ -27,6 +27,6 @@ parseDay ::
   (CharParsing p, Monad p) =>
   p Day
 parseDay =
-  Day <$> parsedigit <*> parsedigit
+  Day <$> parseDecimal <*> parseDecimal
 
 makeClassy ''Day
