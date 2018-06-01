@@ -94,8 +94,8 @@ executable          aip
                     , lens >= 4 && < 5
                     , papa >= 0.3 && < 0.4
                     , time >= 1.6 && < 1.9
-                    , process
-                    , exitcode                    
+                    , process >= 1.6 && < 2.0
+                    , exitcode >= 0.1.0.0 && < 1.0     
 
   ghc-options:
                     -Wall
