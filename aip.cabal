@@ -94,6 +94,8 @@ executable          aip
                     , lens >= 4 && < 5
                     , papa >= 0.3 && < 0.4
                     , time >= 1.6 && < 1.9
+                    , process
+                    , exitcode                    
 
   ghc-options:
                     -Wall
@@ -102,7 +104,7 @@ executable          aip
                     NoImplicitPrelude
 
   hs-source-dirs:
-                    src-exe
+                    src
 
 test-suite          tests
 

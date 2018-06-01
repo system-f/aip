@@ -4,15 +4,57 @@ module Main(
   main
 ) where
 
+import Control.Exitcode(ExitcodeT0, ExitcodeT, fromExitCode, runExitcode)
+import Control.Monad((>=>))
 import Control.Monad.Trans.Class(MonadTrans(lift))
 import Data.Aviation.Aip.AipDocuments(distributeAipDocuments)
 import Data.Time(UTCTime(utctDay, utctDayTime), TimeOfDay(TimeOfDay), toGregorian, timeToTimeOfDay, getCurrentTime)
-import System.Environment(getArgs)
-import System.IO(IO, hPutStrLn, stderr)
-import Sys.Exit(CreateProcess, ExitCodeM, procIn, createMakeWaitProcessM, exit)
 import System.Directory(listDirectory, doesDirectoryExist, doesFileExist, createDirectoryIfMissing)
+import System.Environment(getArgs)
+import System.Exit(ExitCode(ExitFailure, ExitSuccess), exitWith)
 import System.FilePath((</>), takeDirectory, splitFileName, takeExtension)
+import System.IO(IO, hPutStrLn, stderr)
+import System.Process(CreateProcess(cwd), ProcessHandle, createProcess, waitForProcess, proc)
 import Papa
+
+createProcessHandle ::
+  CreateProcess
+  -> IO ProcessHandle
+createProcessHandle =
+  fmap (view _4) . createProcess
+
+createMakeWaitProcess ::
+  CreateProcess
+  -> ExitcodeT0 IO
+createMakeWaitProcess c =
+  fromExitCode $
+    do  mapM_ (createDirectoryIfMissing True) (cwd c)
+        (createProcessHandle >=> waitForProcess) c
+
+procIn ::
+  FilePath -- ^ the working directory
+  -> FilePath
+  -> [String]
+  -> CreateProcess
+procIn dir p s =
+  (\q -> q { cwd =  Just dir}) -- todo lens
+    (proc p s)
+
+exit ::
+  ExitcodeT0 IO
+  -> IO ()
+exit e =
+  toExitCode e >>= exitWith
+
+-- belongs in exitcode
+toExitCode ::
+  Functor f =>
+  ExitcodeT f a
+  -> f ExitCode
+toExitCode e =
+  either ExitFailure (const ExitSuccess) <$> runExitcode e
+
+----
 
 main ::
   IO ()
@@ -24,7 +66,7 @@ main =
               let u = time t ++ "UTC"
                   d = adir </> u
               void (distributeAipDocuments (d </> "aip") (d </> "log"))
-              exit $ do   createMakeWaitProcessM . linkLatest adir $ u
+              exit $ do   createMakeWaitProcess . linkLatest adir $ u
                           tarDirectories d (d </> "download")
                           m <- lift (pdffiles (d </> "aip"))
                           mapM_ (\(dty, ext, n) -> convert' dty (d </> "aip") ext n) ((,,) <$> [100, 250] <*> ["png"] <*> m)
@@ -36,11 +78,11 @@ convert' ::
   -> FilePath
   -> String
   -> FilePath
-  -> ExitCodeM IO
+  -> ExitcodeT0 IO
 convert' dty d ext p =
   let ot = takeDirectory d </> "convert" </> p ++ ".density" ++ show dty ++ "." ++ ext
   in  do  lift (createDirectoryIfMissing True (takeDirectory ot))
-          createMakeWaitProcessM (convert dty d p ot)
+          createMakeWaitProcess (convert dty d p ot)
 
 convert ::
   Int
@@ -83,7 +125,7 @@ directories p =
 tarDirectories ::
   FilePath
   -> FilePath
-  -> ExitCodeM IO
+  -> ExitcodeT0 IO
 tarDirectories d1 d2 =
   let tarDirectories' r s =
         let tarDirectory ::
@@ -103,11 +145,11 @@ tarDirectories d1 d2 =
             tarDirectory' ::
               FilePath
               -> FilePath
-              -> ExitCodeM IO
+              -> ExitcodeT0 IO
             tarDirectory' d e =
               do  lift (createDirectoryIfMissing True (takeDirectory e))
                   p <- lift (doesFileExist (e ++ ".tar.gz"))
-                  p `unless` createMakeWaitProcessM (tarDirectory d e)
+                  p `unless` createMakeWaitProcess (tarDirectory d e)
         in  do  ds <- lift (directories r)
                 mapM_ (\d -> 
                   let r' = r </> d
