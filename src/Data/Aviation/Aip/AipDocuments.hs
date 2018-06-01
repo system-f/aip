@@ -1224,25 +1224,21 @@ aipDocuments (Ersas ersas) =
         , "YYKI"
         , "YYNG"
         ]
-      cur_pend_date x i p =
-        cur_pend x (\d -> ['_' : uriAipDate d]) i p
-      cur_pend0 x i p =
-        cur_pend x (const []) i p
-      cur_pend x g i p =
+      req x k =
         x >>= \f ->
-          ["current", "pending"] >>= \q ->
-          ersas >>= \er ->
-          [er ^. ersaDate, er ^. ersaHref . aiphrefdate] >>= \d ->
-          "" : g d >>= \s ->
-          pure (q ++ "/" ++ i ++ f ++ s ++ p)
+        ["current/", "pending/"] >>= \q ->
+        ersas >>= \er ->
+        [er ^. ersaDate, er ^. ersaHref . aiphrefdate] >>= \d ->
+        ["", '_' : uriAipDate d] >>= \s ->
+        pure (k f q s)
   in  nub . concat $
         [
-          cur_pend_date prelim "ersa/" ".pdf"
-        , cur_pend_date fac "ersa/" ".pdf"
-        , cur_pend_date rds "ersa/" ".pdf"
-        , cur_pend_date charts "" ".pdf"
-        , cur_pend0 books "" ".pdf"
-        , cur_pend0 dap "" ""
-        , cur_pend0 dah "" ""
-        , cur_pend0 precisionApproachCharts "" ""
+          req prelim                  (\f q s -> q ++ "ersa/" ++ f ++ s ++ ".pdf")
+        , req fac                     (\f q s -> q ++ "ersa/" ++ f ++ s ++ ".pdf")
+        , req rds                     (\f q s -> q ++ "ersa/" ++ f ++ s ++ ".pdf")
+        , req charts                  (\f q s -> q ++ f ++ s ++ ".pdf")
+        , req books                   (\f q s -> q ++ f ++ s ++ ".pdf")
+        , req dap                     (\f _ _ -> f ++ ".pdf")
+        , req dah                     (\f _ _ -> f ++ ".pdf")
+        , req precisionApproachCharts (\f _ _ -> f ++ ".pdf")
         ]
