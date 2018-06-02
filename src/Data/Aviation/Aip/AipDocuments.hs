@@ -1238,7 +1238,7 @@ aipDocuments (Ersas ersas) =
         , req rds                     (\f q s -> q ++ "ersa/" ++ f ++ s ++ ".pdf")
         , req charts                  (\f q s -> q ++ f ++ s ++ ".pdf")
         , req books                   (\f q s -> q ++ f ++ s ++ ".pdf")
-        , req dap                     (\f _ _ -> f ++ ".pdf")
-        , req dah                     (\f _ _ -> f ++ ".pdf")
-        , req precisionApproachCharts (\f _ _ -> f ++ ".pdf")
+        , req dap                     (\f _ _ -> f)
+        , req dah                     (\f _ _ -> f)
+        , req precisionApproachCharts (\f _ _ -> f)
         ]
