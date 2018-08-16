@@ -1,100 +1,182 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# OPTIONS_HADDOCK prune #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.AipDate(
-  AipDateSeparator(..)
-, AsAipDateSeparator(..)
-, parseAipDateSeparator
-, uriAipDateSeparator
-, AipDate(..)
-, parseAipDate
-, uriAipDate
+  AipDate(..)
+, AsAipDate(..)
+, FoldAipDate(..)
+, GetAipDate(..)
+, SetAipDate(..)
+, ManyAipDate(..)
 , HasAipDate(..)
+, IsAipDate(..)
 ) where
 
-import Data.Aviation.Aip.Day(Day(Day), HasDay(day), parseDay)
-import Data.Aviation.Aip.Month(Month, HasMonth(month), parseMonth)
-import Data.Aviation.Aip.Year(Year(Year), HasYear(year), parseYear)
-import Text.Parser.Char(CharParsing, char)
-import Papa
+import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
+import Papa hiding ((.=))
 
-data AipDateSeparator =
-  NoAipDateSeparator
-  | HyphenAipDateSeparator
-  | SpaceAipDateSeparator
+newtype AipDate =
+  AipDate
+    String
   deriving (Eq, Ord, Show)
 
-makeClassyPrisms ''AipDateSeparator
+instance FromJSON AipDate where
+  parseJSON v =
+    AipDate <$> parseJSON v
 
-parseAipDateSeparator ::
-  (CharParsing p, Monad p) =>
-  p AipDateSeparator
-parseAipDateSeparator =
-  HyphenAipDateSeparator <$ char '-' <|>
-  SpaceAipDateSeparator <$ char ' ' <|>
-  pure NoAipDateSeparator
+instance ToJSON AipDate where
+  toJSON (AipDate x) =
+    toJSON x
 
-uriAipDateSeparator ::
-  AipDateSeparator
-  -> String
-uriAipDateSeparator NoAipDateSeparator =
-  ""
-uriAipDateSeparator HyphenAipDateSeparator =
-  "-"
-uriAipDateSeparator SpaceAipDateSeparator =
-  " "
+instance Semigroup AipDate where
+  AipDate x <> AipDate y =
+    AipDate (x <> y)
 
-data AipDate =
-  AipDate {
-    _aipday ::
-      Day
-  , separator1 ::
-      AipDateSeparator
-  , _aipmonth ::
-      Month
-  , separator2 ::
-      AipDateSeparator
-  , _aipyear ::
-      Year
-  } deriving (Eq, Ord, Show)
+instance Monoid AipDate where
+  mappend =
+    (<>)
+  mempty =
+    AipDate mempty
 
-makeClassy ''AipDate
+instance Cons AipDate AipDate Char Char where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
 
-parseAipDate ::
-  (CharParsing p, Monad p) =>
-  p AipDate
-parseAipDate =
-  AipDate <$> parseDay <*> parseAipDateSeparator <*> parseMonth <*> parseAipDateSeparator <*> parseYear
+instance Snoc AipDate AipDate Char Char where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
 
-instance HasDay AipDate where
-  day =
-    aipday . day
+instance Each AipDate AipDate Char Char where
+  each =
+    _Wrapped . each
+
+instance Reversing AipDate where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated AipDate where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue AipDate = Char
+type instance Index AipDate = Int
+instance Ixed AipDate where
+  ix i =
+    _Wrapped . ix i
+
+instance Wrapped AipDate where
+  type Unwrapped AipDate = String
+  _Wrapped' =
+    iso
+      (\(AipDate x) -> x)
+      AipDate
+
+instance AipDate ~ a =>
+  Rewrapped AipDate a
+
+class ManyAipDate a => AsAipDate a where
+  _AipDate ::
+    Prism' a AipDate
+  default _AipDate ::
+    IsAipDate a =>
+    Prism' a AipDate
+  _AipDate =
+    _IsAipDate
+
+instance AsAipDate AipDate where
+  _AipDate =
+    id
+  
+instance AsAipDate String where
+  _AipDate =
+    from _Wrapped
+
+class FoldAipDate a where
+  _FoldAipDate ::
+    Fold a AipDate
     
-instance HasMonth AipDate where
-  month =
-    aipmonth . month
+instance FoldAipDate AipDate where
+  _FoldAipDate =
+    id
 
-instance HasYear AipDate where
-  year =
-    aipyear . year
+instance FoldAipDate String where
+  _FoldAipDate =
+    from _Wrapped
 
-uriAipDate ::
-  AipDate
-  -> String
-uriAipDate (AipDate (Day d1 d2) s1 m s2 (Year y1 y2 y3 y4)) =
-  concat
-    [
-      show d1
-    , show d2
-    , uriAipDateSeparator s1
-    , show m
-    , uriAipDateSeparator s2
-    , show y1
-    , show y2
-    , show y3
-    , show y4
-    ]
+class FoldAipDate a => GetAipDate a where
+  _GetAipDate ::
+    Getter a AipDate
+  default _GetAipDate ::
+    HasAipDate a =>
+    Getter a AipDate
+  _GetAipDate =
+    aipDate
+    
+instance GetAipDate AipDate where
+  _GetAipDate =
+    id
+
+instance GetAipDate String where
+  _GetAipDate =
+    from _Wrapped
+
+class SetAipDate a where
+  _SetAipDate ::
+    Setter' a AipDate
+  default _SetAipDate ::
+    ManyAipDate a =>
+    Setter' a AipDate
+  _SetAipDate =
+    _ManyAipDate
+    
+instance SetAipDate AipDate where
+  _SetAipDate =
+    id
+
+instance SetAipDate String where
+  _SetAipDate =
+    from _Wrapped
+
+class (FoldAipDate a, SetAipDate a) => ManyAipDate a where
+  _ManyAipDate ::
+    Traversal' a AipDate
+
+instance ManyAipDate AipDate where
+  _ManyAipDate =
+    id
+
+instance ManyAipDate String where
+  _ManyAipDate =
+    from _Wrapped
+
+class (GetAipDate a, ManyAipDate a) => HasAipDate a where
+  aipDate ::
+    Lens' a AipDate
+  default aipDate ::
+    IsAipDate a =>
+    Lens' a AipDate
+  aipDate =
+    _IsAipDate
+
+instance HasAipDate AipDate where
+  aipDate =
+    id
+
+instance HasAipDate String where
+  aipDate =
+    from _Wrapped
+
+class (HasAipDate a, AsAipDate a) => IsAipDate a where
+  _IsAipDate ::
+    Iso' a AipDate
+    
+instance IsAipDate AipDate where
+  _IsAipDate =
+    id
+
+instance IsAipDate String where
+  _IsAipDate =
+    from _Wrapped

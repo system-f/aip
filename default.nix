@@ -22,13 +22,21 @@ let
       rev = "04fbbe14773166de273577c0a6cb8dd89358fc78";
       sha256 = "0ypad68l7017my3vhcids21wx27lm381xx52c9q8pwviqlvdd077";
     };
+
+    waargonaut = pkgs.fetchFromGitHub {
+      owner = "qfpl";
+      repo = "waargonaut";
+      rev = "14c0928a0da5bbe50c1364e9a7ab40290b32ea0d";
+      sha256 = "124ns0i71wiir9lybfqzpy6zqk4qxk3qa7wnhv04f8lr2f0vl5j9";
+    };
   };
 
   modifiedHaskellPackages = haskellPackages.override {
     overrides = self: super: import sources.papa self // {
       parsers = pkgs.haskell.lib.dontCheck super.parsers;
-      notzero = import sources.notzero { inherit nixpkgs compiler; };
+      notzero = sources.notzero;
       tagsoup-selection = pkgs.haskell.lib.doJailbreak super.tagsoup-selection;
+      # waargonaut = sources.waargonaut;
     };
   };
 
