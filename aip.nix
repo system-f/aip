@@ -1,7 +1,8 @@
-{ mkDerivation, base, bytestring, checkers, digit, directory
-, exitcode, filepath, HTTP, lens, network-uri, papa, parsec
-, parsers, process, QuickCheck, stdenv, tagsoup, tagsoup-selection
-, tasty, tasty-hunit, tasty-quickcheck, time, transformers
+{ mkDerivation, base, bytestring, checkers, Crypto, digit
+, directory, exitcode, filepath, HTTP, lens, network-uri, papa
+, parsec, parsers, process, QuickCheck, stdenv, tagsoup
+, tagsoup-selection, tasty, tasty-hunit, tasty-quickcheck, time
+, transformers, utf8-string, waargonaut
 }:
 mkDerivation {
   pname = "aip";
@@ -10,13 +11,14 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base bytestring digit directory filepath HTTP lens network-uri papa
-    parsec parsers tagsoup tagsoup-selection transformers
+    base bytestring Crypto digit directory filepath HTTP lens
+    network-uri papa parsec parsers tagsoup tagsoup-selection
+    transformers utf8-string waargonaut
   ];
   executableHaskellDepends = [
-    base bytestring digit directory exitcode filepath HTTP lens
+    base bytestring Crypto digit directory exitcode filepath HTTP lens
     network-uri papa parsec parsers process tagsoup tagsoup-selection
-    time transformers
+    time transformers utf8-string waargonaut
   ];
   testHaskellDepends = [
     base checkers lens QuickCheck tasty tasty-hunit tasty-quickcheck

@@ -4,6 +4,77 @@ module Main(
   main
 ) where
 
+import Control.Monad.Trans.Except
+import Data.Aviation.Aip.ConnErrorHttp4xx
+import Data.Aviation.Aip.HttpRequest
+import Data.Foldable
+import Papa
+import System.IO
+import Text.HTML.TagSoup.Tree
+import Text.HTML.TagSoup.Tree.Zipper
+import Codec.Binary.UTF8.String
+import Waargonaut.Encode
+
+run0 ::
+  ExceptT
+    ConnErrorHttp4xx
+    IO
+    [TagTree String]
+run0 = 
+  parseTree <$> requestAipContents
+
+run1 ::
+  ExceptT
+    ConnErrorHttp4xx
+    IO
+    AipDocuments
+run1 =
+  foldMap (traverseAipDocuments . fromTagTree) <$> run0
+
+main ::
+  IO ()
+main =
+  do  x <- runExceptT run0
+      print (x, length x)
+
+traverseAipDocuments ::
+  TagTreePos String
+  -> AipDocuments
+traverseAipDocuments =
+  undefined
+
+undefined = undefined
+
+data AipDocumentType =
+  AIP_Book
+  | AIP_Charts
+  | Aip_SUP_AIC
+  | Aip_Summary_SUP_AIC
+  | Aip_DAP
+  | Aip_DAH
+  | Aip_ERSA
+  | Aip_AandB_Charts
+  deriving (Eq, Ord, Show)
+
+data AipDocument =
+  AipDocument
+    AipDocumentType
+    -- todo
+  deriving (Eq, Ord, Show)
+
+newtype AipDocuments =
+  AipDocuments
+    [AipDocument]
+  deriving (Eq, Ord, Show)
+
+instance Monoid AipDocuments where
+  mempty =
+    AipDocuments
+      mempty
+  AipDocuments x `mappend` AipDocuments y =
+    AipDocuments (x `mappend` y)
+
+{-
 import Control.Exitcode(ExitcodeT0, ExitcodeT, fromExitCode, runExitcode)
 import Control.Monad((>=>))
 import Control.Monad.Trans.Class(MonadTrans(lift))
@@ -183,3 +254,4 @@ time t =
       (y, m, d) = toGregorian (utctDay t)
       TimeOfDay h n s = timeToTimeOfDay (utctDayTime t)
   in concat [show y, show2 m, show2 d, "-", show2 h, show2 n, show2 (floor s)]
+-}
