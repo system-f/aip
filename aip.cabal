@@ -45,7 +45,6 @@ library
                     , papa >= 0.3 && < 0.4
                     , utf8-string
                     , Crypto
-                    , waargonaut
                     
   ghc-options:
                     -Wall
@@ -101,7 +100,6 @@ executable          aip
                     , exitcode >= 0.1.0.0 && < 1.0     
                     , utf8-string
                     , Crypto
-                    , waargonaut
 
   ghc-options:
                     -Wall

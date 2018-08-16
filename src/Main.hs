@@ -13,7 +13,6 @@ import System.IO
 import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup.Tree.Zipper
 import Codec.Binary.UTF8.String
-import Waargonaut.Encode
 
 run0 ::
   ExceptT
