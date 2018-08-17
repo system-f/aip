@@ -32,11 +32,11 @@ let
   };
 
   modifiedHaskellPackages = haskellPackages.override {
-    overrides = self: super: import sources.papa self //  {
+    overrides = self: super: import sources.papa self // {
       parsers = pkgs.haskell.lib.dontCheck super.parsers;
-      notzero = import sources.notzero { inherit nixpkgs compiler; };
+      notzero = sources.notzero;
       tagsoup-selection = pkgs.haskell.lib.doJailbreak super.tagsoup-selection;
-      # waargonaut = import sources.waargonaut { inherit nixpkgs compiler; };
+      # waargonaut = sources.waargonaut;
     };
   };
 

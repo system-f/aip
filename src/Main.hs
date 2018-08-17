@@ -1,64 +1,196 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Main(
   main
 ) where
 
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import Data.Aviation.Aip.ConnErrorHttp4xx
 import Data.Aviation.Aip.HttpRequest
 import Data.Foldable
-import Papa
+import Data.Time
+import Papa hiding ((.=))
+import System.Directory
+import System.FilePath
 import System.IO
+import Text.HTML.TagSoup
 import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup.Tree.Zipper
 import Codec.Binary.UTF8.String
+import Data.Aeson
+import Data.Digest.SHA1
 
-run0 ::
-  ExceptT
-    ConnErrorHttp4xx
-    IO
-    [TagTree String]
-run0 = 
-  parseTree <$> requestAipContents
+newtype SHA1 =
+  SHA1
+    Word160
+  deriving (Eq, Show)
 
-run1 ::
-  ExceptT
-    ConnErrorHttp4xx
-    IO
-    AipDocuments
-run1 =
-  foldMap (traverseAipDocuments . fromTagTree) <$> run0
+instance FromJSON SHA1 where
+  parseJSON v =
+    (\(b0, b1, b2, b3, b4) -> SHA1 (Word160 b0 b1 b2 b3 b4)) <$> parseJSON v
+
+instance ToJSON SHA1 where
+  toJSON (SHA1 (Word160 b0 b1 b2 b3 b4)) =
+    toJSON (b0, b1, b2, b3, b4)
+
+data AipRecord =
+  AipRecord
+    SHA1
+    UTCTime
+    [FilePath]
+  deriving (Eq, Show)
+
+instance FromJSON AipRecord where
+  parseJSON =
+    withObject "AipRecord" $ \v ->
+      AipRecord <$>
+        v .: "sha1" <*>
+        v .: "utc" <*>
+        v .: "files"
+
+instance ToJSON AipRecord where
+  toJSON (AipRecord s t p) =
+    object ["sha1" .= s, "utc" .= t, "files" .= p]
+
+newtype AipRecords =
+  AipRecords
+    [AipRecord]
+  deriving (Eq, Show)
+
+instance Monoid AipRecords where
+  mempty =
+    AipRecords mempty
+  AipRecords x `mappend` AipRecords y =
+    AipRecords (x `mappend` y)
+
+instance Cons AipRecords AipRecords AipRecord AipRecord where
+  _Cons =
+    prism'
+      (\(h, AipRecords t) -> AipRecords (h `cons` t))
+      (\(AipRecords x) -> fmap (fmap AipRecords) (uncons x))
+
+instance AsEmpty AipRecords where
+  _Empty =
+    prism'
+      (\() -> AipRecords [])
+      (\(AipRecords x) -> case x of
+                            [] ->
+                              Just ()
+                            _:_ ->
+                              Nothing)
+
+instance FromJSON AipRecords where
+  parseJSON v =
+    AipRecords <$> parseJSON v
+
+instance ToJSON AipRecords where
+  toJSON (AipRecords x) =
+    toJSON x
+
+class ManyAipRecord a where
+  _ManyAipRecord ::
+    Traversal' a AipRecord
+
+instance ManyAipRecord AipRecord where
+  _ManyAipRecord =
+    id
+
+instance ManyAipRecord AipRecords where
+  _ManyAipRecord f (AipRecords x) =
+    AipRecords <$> traverse f x
+
+aiprecords ::
+  FilePath
+aiprecords =
+  "aip-records.json"
+
+runX ::
+  FilePath -- basedir
+  -> ExceptT ConnErrorHttp4xx IO AipRecord
+runX dir =
+  let aiprecords' =
+        dir </> aiprecords
+  in  do  c <-  requestAipContents
+          let s = SHA1 (hash (Codec.Binary.UTF8.String.encode c))
+          e <-  liftIO (doesFileExist aiprecords')
+          x <-  liftIO $
+                  if e
+                    then
+                      decodeFileStrict aiprecords' :: IO (Maybe (AipRecords))
+                    else
+                      pure Nothing
+          let w = x >>= findOf _ManyAipRecord (\(AipRecord h _ _) -> h == s)
+          case w of
+            Nothing ->
+              do  (t, p) <- runY c
+                  let r = AipRecord s t p
+                  liftIO $ encodeFile aiprecords' (r `cons` fromMaybe mempty x)
+                  pure r
+            Just v ->
+              pure v
+
+runY ::
+  String
+  -> ExceptT ConnErrorHttp4xx IO (UTCTime, [FilePath])
+runY s =
+  do  t <- liftIO getCurrentTime
+      let tt = parseTree s
+      liftIO $ writeFile "/tmp/tree.hs" (show tt)
+      let AipDocuments tr = foldMap (traverseTree traverseAipDocuments . fromTagTree) tt
+      liftIO $ Papa.mapM_ print tr
+      pure (t, ["file", "file2"])
 
 main ::
   IO ()
 main =
-  do  x <- runExceptT run0
-      print (x, length x)
+  do  writeFile ("/tmp/abc" </> aiprecords) ""
+      removeFile ("/tmp/abc" </> aiprecords) -- stop cache
+      x <- runExceptT $ runX "/tmp/abc"
+      print x
 
 traverseAipDocuments ::
   TagTreePos String
   -> AipDocuments
-traverseAipDocuments =
-  undefined
-
-undefined = undefined
-
-data AipDocumentType =
-  AIP_Book
-  | AIP_Charts
-  | Aip_SUP_AIC
-  | Aip_Summary_SUP_AIC
-  | Aip_DAP
-  | Aip_DAH
-  | Aip_ERSA
-  | Aip_AandB_Charts
-  deriving (Eq, Ord, Show)
+traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
+        [AIP_Book href tx]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
+        [AIP_Charts href tx]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
+        [Aip_SUP_AIC href]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
+        [Aip_DAP href tx]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
+        [Aip_DAH href tx]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
+        [Aip_ERSA href tx]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
+        [Aip_AandB_Charts href]
+      li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        let str = "Summary of SUP/AIC Current"
+            (p, s) = splitAt (length str) tx
+        in  if p == str then
+              [Aip_Summary_SUP_AIC href s]
+            else
+              [] 
+      li _ =
+        []
+  in  AipDocuments (x >>= li)
+traverseAipDocuments _ =
+  mempty
 
 data AipDocument =
-  AipDocument
-    AipDocumentType
-    -- todo
+  AIP_Book String String
+  | AIP_Charts String String
+  | Aip_SUP_AIC String
+  | Aip_Summary_SUP_AIC String String
+  | Aip_DAP String String
+  | Aip_DAH String String
+  | Aip_ERSA String String
+  | Aip_AandB_Charts String
   deriving (Eq, Ord, Show)
 
 newtype AipDocuments =
@@ -72,6 +204,23 @@ instance Monoid AipDocuments where
       mempty
   AipDocuments x `mappend` AipDocuments y =
     AipDocuments (x `mappend` y)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 {-
 import Control.Exitcode(ExitcodeT0, ExitcodeT, fromExitCode, runExitcode)
