@@ -107,6 +107,16 @@ aiprecords ::
 aiprecords =
   "aip-records.json"
 
+runY ::
+  String
+  -> ExceptT ConnErrorHttp4xx IO (UTCTime, [FilePath])
+runY s =
+  do  t <- liftIO getCurrentTime
+      let tt = parseTree s
+      let AipDocuments tr = foldMap (traverseTree traverseAipDocuments . fromTagTree) tt
+      liftIO $ Papa.mapM_ print tr
+      pure (t, ["file", "file2"])
+
 runX ::
   FilePath -- basedir
   -> ExceptT ConnErrorHttp4xx IO AipRecord
@@ -131,17 +141,6 @@ runX dir =
                   pure r
             Just v ->
               pure v
-
-runY ::
-  String
-  -> ExceptT ConnErrorHttp4xx IO (UTCTime, [FilePath])
-runY s =
-  do  t <- liftIO getCurrentTime
-      let tt = parseTree s
-      liftIO $ writeFile "/tmp/tree.hs" (show tt)
-      let AipDocuments tr = foldMap (traverseTree traverseAipDocuments . fromTagTree) tt
-      liftIO $ Papa.mapM_ print tr
-      pure (t, ["file", "file2"])
 
 main ::
   IO ()

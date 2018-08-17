@@ -47,15 +47,16 @@ doRequest ::
 doRequest r =
   ExceptT $
     do  x <- simpleHTTP r
-        case x of
-          Left e ->
-            pure (Left (IsConnError e))
-          Right c ->
-            let (r1, r2, r3) = rspCode c
-            in  if r1 == 4 then
-                  pure (Left (Http4xx r2 r3))
-                else
-                  pure (Right (rspBody c))
+        pure $
+          case x of
+            Left e ->
+              Left (IsConnError e)
+            Right c ->
+              let (r1, r2, r3) = rspCode c
+              in  if r1 == 4 then
+                    Left (Http4xx r2 r3)
+                  else
+                    Right (rspBody c)
 
 requestAipContents ::
   ExceptT ConnErrorHttp4xx IO String
