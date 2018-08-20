@@ -176,7 +176,7 @@ run2 (AIP_Book u t) =
 run2 (AIP_Charts u t) =
   do  r <- doRequest (aipRequestGet u "")
       let q = foldMap (traverseTree traverseAipCharts1 . fromTagTree) (parseTree r)
-      q' <- traverse (\(u', t') ->  do  r' <- doRequest (aipRequestGet u' "") :: ExceptT ConnErrorHttp4xx IO String
+      q' <- traverse (\(u', t') ->  do  r' <- doRequest (aipRequestGet u' "")
                                         let n = foldMap (traverseTree traverseAipCharts2 . fromTagTree) (parseTree r')
                                         pure (u', n, t')) q
       pure (AIP_Charts2 u t q')
