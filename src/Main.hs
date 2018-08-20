@@ -10,7 +10,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import Data.Aviation.Aip.ConnErrorHttp4xx
 import Data.Aviation.Aip.HttpRequest
-import Data.Foldable
 import Data.Time
 import Papa hiding ((.=))
 import System.Directory
@@ -112,10 +111,88 @@ runY ::
   -> ExceptT ConnErrorHttp4xx IO (UTCTime, [FilePath])
 runY s =
   do  t <- liftIO getCurrentTime
-      let tt = parseTree s
-      let AipDocuments tr = foldMap (traverseTree traverseAipDocuments . fromTagTree) tt
-      liftIO $ Papa.mapM_ print tr
+      let a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree s)
+      AipDocuments2 tr2 <- runs2 a
+      liftIO $ Papa.mapM_ print tr2
       pure (t, ["file", "file2"])
+
+runs2 ::
+  AipDocuments
+  -> ExceptT ConnErrorHttp4xx IO AipDocuments2
+runs2 (AipDocuments d) =
+  AipDocuments2 <$> traverse run2 d
+
+traverseAipBooks ::
+  TagTreePos String
+  -> [(String, String)]
+traverseAipBooks (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        if ".pdf" `isSuffixOf` href
+          then
+            [(href, tx)]
+          else
+            []
+      li _ =
+        []
+  in  x >>= li
+traverseAipBooks _ =
+  []
+
+traverseAipCharts1 ::
+  TagTreePos String
+  -> [(String, String)]
+traverseAipCharts1 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        [(href, tx)]
+      li _ =
+        []
+  in  x >>= li
+traverseAipCharts1 _ =
+  []
+
+traverseAipCharts2 ::
+  TagTreePos String
+  -> [(String, String)]
+traverseAipCharts2 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        if ".pdf" `isSuffixOf` href
+          then
+            [(href, tx)]
+          else
+            []
+      li _ =
+        []
+  in  x >>= li
+traverseAipCharts2 _ =
+  []
+
+run2 ::
+  AipDocument
+  -> ExceptT ConnErrorHttp4xx IO AipDocument2
+run2 (AIP_Book u t) =
+  do  r <- doRequest (aipRequestGet u "")
+      let q = foldMap (traverseTree traverseAipBooks . fromTagTree) (parseTree r)
+      pure (AIP_Book2 u t q)
+run2 (AIP_Charts u t) =
+  do  r <- doRequest (aipRequestGet u "")
+      let q = foldMap (traverseTree traverseAipCharts1 . fromTagTree) (parseTree r)
+      q' <- traverse (\(u', t') ->  do  r' <- doRequest (aipRequestGet u' "") :: ExceptT ConnErrorHttp4xx IO String
+                                        let n = foldMap (traverseTree traverseAipCharts2 . fromTagTree) (parseTree r')
+                                        pure (u', n, t')) q
+      pure (AIP_Charts2 u t q')
+      -- up to here 20180820
+run2 (Aip_SUP_AIC u) =
+  pure (Aip_SUP_AIC2 u)
+run2 (Aip_Summary_SUP_AIC u t) =
+  pure (Aip_Summary_SUP_AIC2 u t)
+run2 (Aip_DAP u t) =
+  pure (Aip_DAP2 u t)
+run2 (Aip_DAH u t) =
+  pure (Aip_DAH2 u t)
+run2 (Aip_ERSA u t) =
+  pure (Aip_ERSA2 u t)
+run2 (Aip_AandB_Charts u) =
+  pure (Aip_AandB_Charts2 u)
 
 runX ::
   FilePath -- basedir
@@ -145,8 +222,7 @@ runX dir =
 main ::
   IO ()
 main =
-  do  writeFile ("/tmp/abc" </> aiprecords) ""
-      removeFile ("/tmp/abc" </> aiprecords) -- stop cache
+  do  sequence_ [createDirectoryIfMissing True "/tmp/abc", writeFile ("/tmp/abc" </> aiprecords) "", removeFile ("/tmp/abc" </> aiprecords)] -- stop cache
       x <- runExceptT $ runX "/tmp/abc"
       print x
 
@@ -203,6 +279,30 @@ instance Monoid AipDocuments where
       mempty
   AipDocuments x `mappend` AipDocuments y =
     AipDocuments (x `mappend` y)
+
+data AipDocument2 =
+  AIP_Book2 String String [(String, String)]
+  | AIP_Charts2 String String [(String, [(String, String)], String)]
+  | Aip_SUP_AIC2 String
+  | Aip_Summary_SUP_AIC2 String String
+  | Aip_DAP2 String String
+  | Aip_DAH2 String String
+  | Aip_ERSA2 String String
+  | Aip_AandB_Charts2 String
+  deriving (Eq, Ord, Show)
+
+newtype AipDocuments2 =
+  AipDocuments2
+    [AipDocument2]
+  deriving (Eq, Ord, Show)
+
+instance Monoid AipDocuments2 where
+  mempty =
+    AipDocuments2
+      mempty
+  AipDocuments2 x `mappend` AipDocuments2 y =
+    AipDocuments2 (x `mappend` y)
+
 
 
 
