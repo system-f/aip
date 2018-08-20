@@ -182,7 +182,9 @@ run2 (AIP_Charts u t) =
       pure (AIP_Charts2 u t q')
       -- up to here 20180820
 run2 (Aip_SUP_AIC u) =
-  pure (Aip_SUP_AIC2 u)
+  do  r <- doRequest (aipRequestGet u "") :: ExceptT ConnErrorHttp4xx IO String
+      let w :: [TagTree String]; w = parseTree r
+      pure (Aip_SUP_AIC2 u w)
 run2 (Aip_Summary_SUP_AIC u t) =
   pure (Aip_Summary_SUP_AIC2 u t)
 run2 (Aip_DAP u t) =
@@ -283,7 +285,7 @@ instance Monoid AipDocuments where
 data AipDocument2 =
   AIP_Book2 String String [(String, String)]
   | AIP_Charts2 String String [(String, [(String, String)], String)]
-  | Aip_SUP_AIC2 String
+  | Aip_SUP_AIC2 String [TagTree String]
   | Aip_Summary_SUP_AIC2 String String
   | Aip_DAP2 String String
   | Aip_DAH2 String String
