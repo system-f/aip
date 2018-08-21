@@ -170,6 +170,21 @@ instance ManyListItemLink ListItemLinks where
   _ManyListItemLink f (ListItemLinks x) =
     ListItemLinks <$> traverse f x
 
+newtype ListItemLinks1 =
+  ListItemLinks1
+    [NonEmpty ListItemLink]
+  deriving (Eq, Ord, Show)
+
+instance Semigroup ListItemLinks1 where
+  ListItemLinks1 x <> ListItemLinks1 y =
+    ListItemLinks1 (x <> y)
+
+instance Monoid ListItemLinks1 where
+  mappend =
+    (<>)
+  mempty =
+    ListItemLinks1 mempty
+
 traverseListItems ::
   (String -> Bool)
   -> TagTreePos String
@@ -205,13 +220,38 @@ traverseAipCharts3 ::
 traverseAipCharts3 =
   traverseListItems (isSuffixOf ".pdf")
 
+data Aip_SUP_and_AIC =
+  Aip_SUP_and_AIC 
+    String
+    String
+    String
+    String
+    String
+  deriving (Eq, Ord, Show)
+
+newtype Aip_SUP_and_AICs =
+  Aip_SUP_and_AICs
+    [Aip_SUP_and_AIC]
+  deriving (Eq, Ord, Show)
+
+
+instance Semigroup Aip_SUP_and_AICs where
+  Aip_SUP_and_AICs x <> Aip_SUP_and_AICs y =
+    Aip_SUP_and_AICs (x <> y)
+
+instance Monoid Aip_SUP_and_AICs where
+  mappend =
+    (<>)
+  mempty =
+    Aip_SUP_and_AICs mempty
+
 traverseAip_SUP_AIC ::
   TagTreePos String
-  -> [(String, String, String, String, String)]
+  -> Aip_SUP_and_AICs
 traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
-  [(docnum, href, title, pubdate, effdate)]
+  Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum href title pubdate effdate]
 traverseAip_SUP_AIC _ =
-  []
+  mempty
 
 traverseDAP2 ::
   TagTreePos String
@@ -261,11 +301,15 @@ traverseErsaAerodromes ::
   TagTreePos String
   -> ErsaAerodromes
 traverseErsaAerodromes (TagTreePos (TagBranch "tr" [] (TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText aerodrome)] : TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)] : r)) _ _ _) =
-  ErsaAerodromes [ErsaAerodrome aerodrome fac_href $ case r of
-                                          TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)] : _ : _ ->
-                                            Just rds_href
-                                          _ ->
-                                            Nothing]
+  ErsaAerodromes [
+    ErsaAerodrome
+      aerodrome
+      fac_href $
+      case r of
+        TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)] : _ : _ ->
+          Just rds_href
+        _ ->
+          Nothing]
 traverseErsaAerodromes _ =
   ErsaAerodromes []
 
@@ -299,8 +343,8 @@ run2 (Aip_Charts u t) =
   do  qq <- traverseAipHtmlRequestGet traverseAipCharts11 u
       q' <- traverse (\l@(ListItemLink u' _) ->
               do  n <- traverseAipHtmlRequestGet traverseAipCharts3 u'
-                  pure (l, n)) (qq ^. _Wrapped)
-      pure (Aip_Charts2 u t q')
+                  pure (l :| n ^. _Wrapped)) (qq ^. _Wrapped)
+      pure (Aip_Charts2 u t (ListItemLinks1 q'))
 run2 (Aip_SUP_AIC u) =
   do  q <- traverseAipHtmlRequestGet traverseAip_SUP_AIC u
       pure (Aip_SUP_AIC2 u q)
@@ -405,8 +449,8 @@ instance Monoid AipDocuments where
 
 data AipDocument2 =
   Aip_Book2 String String ListItemLinks
-  | Aip_Charts2 String String [(ListItemLink, ListItemLinks)]
-  | Aip_SUP_AIC2 String [(String, String, String, String, String)]
+  | Aip_Charts2 String String ListItemLinks1
+  | Aip_SUP_AIC2 String Aip_SUP_and_AICs
   | Aip_Summary_SUP_AIC2 String String
   | Aip_DAP2 String String ListItemLinks
   | Aip_DAH2 String String
