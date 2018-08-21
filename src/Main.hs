@@ -166,29 +166,54 @@ traverseAipCharts2 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
 traverseAipCharts2 _ =
   []
 
+traverseAip_SUP_AIC ::
+  TagTreePos String
+  -> [(String, String, String, String, String)]
+traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
+  [(docnum, href, title, pubdate, effdate)]
+traverseAip_SUP_AIC _ =
+  []
+
+traverseDAP2 ::
+  TagTreePos String
+  -> [(String, String)]
+traverseDAP2 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        if ".htm" `isSuffixOf` href
+          then
+            [(href, tx)]
+          else
+            []
+      li _ =
+        []
+  in  x >>= li
+traverseDAP2 _ =
+  []
+
 run2 ::
   AipDocument
   -> ExceptT ConnErrorHttp4xx IO AipDocument2
-run2 (AIP_Book u t) =
+run2 (Aip_Book u t) =
   do  r <- doRequest (aipRequestGet u "")
       let q = foldMap (traverseTree traverseAipBooks . fromTagTree) (parseTree r)
-      pure (AIP_Book2 u t q)
-run2 (AIP_Charts u t) =
+      pure (Aip_Book2 u t q)
+run2 (Aip_Charts u t) =
   do  r <- doRequest (aipRequestGet u "")
       let q = foldMap (traverseTree traverseAipCharts1 . fromTagTree) (parseTree r)
       q' <- traverse (\(u', t') ->  do  r' <- doRequest (aipRequestGet u' "")
                                         let n = foldMap (traverseTree traverseAipCharts2 . fromTagTree) (parseTree r')
                                         pure (u', n, t')) q
-      pure (AIP_Charts2 u t q')
-      -- up to here 20180820
+      pure (Aip_Charts2 u t q')
 run2 (Aip_SUP_AIC u) =
   do  r <- doRequest (aipRequestGet u "") :: ExceptT ConnErrorHttp4xx IO String
-      let w :: [TagTree String]; w = parseTree r
-      pure (Aip_SUP_AIC2 u w)
+      let q = foldMap (traverseTree traverseAip_SUP_AIC . fromTagTree) (parseTree r)
+      pure (Aip_SUP_AIC2 u q)
 run2 (Aip_Summary_SUP_AIC u t) =
   pure (Aip_Summary_SUP_AIC2 u t)
 run2 (Aip_DAP u t) =
-  pure (Aip_DAP2 u t)
+  do  r <- doRequest (aipRequestGet u "")
+      let q = foldMap (traverseTree traverseDAP2 . fromTagTree) (parseTree r)
+      pure (Aip_DAP2 u t q) -- todo
 run2 (Aip_DAH u t) =
   pure (Aip_DAH2 u t)
 run2 (Aip_ERSA u t) =
@@ -233,9 +258,9 @@ traverseAipDocuments ::
   -> AipDocuments
 traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
   let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
-        [AIP_Book href tx]
+        [Aip_Book href tx]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
-        [AIP_Charts href tx]
+        [Aip_Charts href tx]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
         [Aip_SUP_AIC href]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
@@ -260,8 +285,8 @@ traverseAipDocuments _ =
   mempty
 
 data AipDocument =
-  AIP_Book String String
-  | AIP_Charts String String
+  Aip_Book String String
+  | Aip_Charts String String
   | Aip_SUP_AIC String
   | Aip_Summary_SUP_AIC String String
   | Aip_DAP String String
@@ -283,11 +308,11 @@ instance Monoid AipDocuments where
     AipDocuments (x `mappend` y)
 
 data AipDocument2 =
-  AIP_Book2 String String [(String, String)]
-  | AIP_Charts2 String String [(String, [(String, String)], String)]
-  | Aip_SUP_AIC2 String [TagTree String]
+  Aip_Book2 String String [(String, String)]
+  | Aip_Charts2 String String [(String, [(String, String)], String)]
+  | Aip_SUP_AIC2 String [(String, String, String, String, String)]
   | Aip_Summary_SUP_AIC2 String String
-  | Aip_DAP2 String String
+  | Aip_DAP2 String String [(String, String)]
   | Aip_DAH2 String String
   | Aip_ERSA2 String String
   | Aip_AandB_Charts2 String
