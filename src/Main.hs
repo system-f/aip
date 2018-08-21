@@ -190,6 +190,26 @@ traverseDAP2 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
 traverseDAP2 _ =
   []
 
+traverseErsa ::
+  TagTreePos String
+  -> ([(String, String)], [(String, String, Maybe String)])
+traverseErsa (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        if ".pdf" `isSuffixOf` href
+          then
+            [(href, tx)]
+          else
+            []
+      li _ =
+        []
+  in  (x >>= li, [])
+traverseErsa (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _), TagBranch "td" _ [TagLeaf (TagText aerodrome)], TagLeaf (TagText _), TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)], TagLeaf (TagText _), TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)], _]) _ _ _) =
+  ([], [(aerodrome, fac_href, Just rds_href)]) -- todo
+traverseErsa (TagTreePos (TagBranch "tr" [] (TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText aerodrome)] : TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)] : _)) _ _ _) =
+  ([], [(aerodrome, fac_href, Nothing)]) -- todo
+traverseErsa _ =
+  ([], [])
+
 run2 ::
   AipDocument
   -> ExceptT ConnErrorHttp4xx IO AipDocument2
@@ -213,11 +233,13 @@ run2 (Aip_Summary_SUP_AIC u t) =
 run2 (Aip_DAP u t) =
   do  r <- doRequest (aipRequestGet u "")
       let q = foldMap (traverseTree traverseDAP2 . fromTagTree) (parseTree r)
-      pure (Aip_DAP2 u t q) -- todo
+      pure (Aip_DAP2 u t q)
 run2 (Aip_DAH u t) =
   pure (Aip_DAH2 u t)
 run2 (Aip_ERSA u t) =
-  pure (Aip_ERSA2 u t)
+  do  r <- doRequest (aipRequestGet u "")
+      let q = foldMap (traverseTree traverseErsa . fromTagTree) (parseTree r)
+      pure (Aip_ERSA2 u t q)
 run2 (Aip_AandB_Charts u) =
   pure (Aip_AandB_Charts2 u)
 
@@ -314,7 +336,7 @@ data AipDocument2 =
   | Aip_Summary_SUP_AIC2 String String
   | Aip_DAP2 String String [(String, String)]
   | Aip_DAH2 String String
-  | Aip_ERSA2 String String
+  | Aip_ERSA2 String String ([(String, String)], [(String, String, Maybe String)])
   | Aip_AandB_Charts2 String
   deriving (Eq, Ord, Show)
 
