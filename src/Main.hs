@@ -202,24 +202,6 @@ traverseListItems p (TagTreePos (TagBranch "ul" [] x) _ _ _) =
 traverseListItems _ _ =
   ListItemLinks []
 
-traverseAipBooks ::
-  TagTreePos String
-  -> ListItemLinks
-traverseAipBooks =
-  traverseListItems (isSuffixOf ".pdf")
-
-traverseAipCharts11 ::
-  TagTreePos String
-  -> ListItemLinks
-traverseAipCharts11 =
-  traverseListItems (const True)
-
-traverseAipCharts3 ::
-  TagTreePos String
-  -> ListItemLinks
-traverseAipCharts3 =
-  traverseListItems (isSuffixOf ".pdf")
-
 data Aip_SUP_and_AIC =
   Aip_SUP_and_AIC 
     String
@@ -252,12 +234,6 @@ traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBran
   Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum href title pubdate effdate]
 traverseAip_SUP_AIC _ =
   mempty
-
-traverseDAP2 ::
-  TagTreePos String
-  -> ListItemLinks
-traverseDAP2 =
-  traverseListItems (isSuffixOf ".htm")
 
 data ErsaAerodrome =
   ErsaAerodrome
@@ -319,12 +295,6 @@ traverseErsaDocs ::
 traverseErsaDocs =
   traverseListItems (isSuffixOf ".pdf")
 
-traverseErsa ::
-  TagTreePos String
-  -> Ersa
-traverseErsa =
-  Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes
-
 traverseAipHtmlRequestGet ::
   (HStream str, Monoid a, Text.StringLike.StringLike str) =>
   (TagTreePos str -> a)
@@ -337,26 +307,26 @@ run2 ::
   AipDocument
   -> ExceptT ConnErrorHttp4xx IO AipDocument2
 run2 (Aip_Book u t) =
-  do  q <- traverseAipHtmlRequestGet traverseAipBooks u
+  do  q <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u
       pure (Aip_Book2 u t q)
 run2 (Aip_Charts u t) =
-  do  qq <- traverseAipHtmlRequestGet traverseAipCharts11 u
-      q' <- traverse (\l@(ListItemLink u' _) ->
-              do  n <- traverseAipHtmlRequestGet traverseAipCharts3 u'
-                  pure (l :| n ^. _Wrapped)) (qq ^. _Wrapped)
-      pure (Aip_Charts2 u t (ListItemLinks1 q'))
+  do  i <- traverseAipHtmlRequestGet (traverseListItems (const True)) u
+      p <- traverse (\l@(ListItemLink u' _) ->
+              do  n <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u'
+                  pure (l :| n ^. _Wrapped)) (i ^. _Wrapped)
+      pure (Aip_Charts2 u t (ListItemLinks1 p))
 run2 (Aip_SUP_AIC u) =
   do  q <- traverseAipHtmlRequestGet traverseAip_SUP_AIC u
       pure (Aip_SUP_AIC2 u q)
 run2 (Aip_Summary_SUP_AIC u t) =
   pure (Aip_Summary_SUP_AIC2 u t)
 run2 (Aip_DAP u t) =
-  do  q <- traverseAipHtmlRequestGet traverseDAP2 u
+  do  q <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".htm")) u
       pure (Aip_DAP2 u t q)
 run2 (Aip_DAH u t) =
   pure (Aip_DAH2 u t)
 run2 (Aip_ERSA u t) =
-  do  q <- traverseAipHtmlRequestGet traverseErsa u
+  do  q <- traverseAipHtmlRequestGet (Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes) u
       pure (Aip_ERSA2 u t q)
 run2 (Aip_AandB_Charts u) =
   pure (Aip_AandB_Charts2 u)
