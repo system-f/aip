@@ -1,6 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Main(
   main
@@ -21,6 +24,8 @@ import Text.HTML.TagSoup.Tree.Zipper
 import Codec.Binary.UTF8.String
 import Data.Aeson
 import Data.Digest.SHA1
+import Network.TCP
+import Text.StringLike(StringLike)
 
 newtype SHA1 =
   SHA1
@@ -122,49 +127,83 @@ runs2 ::
 runs2 (AipDocuments d) =
   AipDocuments2 <$> traverse run2 d
 
+data ListItemLink =
+  ListItemLink
+    String
+    String
+  deriving (Eq, Ord, Show)
+
+newtype ListItemLinks =
+  ListItemLinks
+    [ListItemLink]
+  deriving (Eq, Ord, Show)
+
+instance Semigroup ListItemLinks where
+  ListItemLinks x <> ListItemLinks y =
+    ListItemLinks (x <> y)
+
+instance Monoid ListItemLinks where
+  mappend =
+    (<>)
+  mempty =
+    ListItemLinks []
+
+class ManyListItemLink a where
+  _ManyListItemLink ::
+    Traversal' a ListItemLink
+
+instance ListItemLinks ~ x => Rewrapped ListItemLinks x
+
+instance Wrapped ListItemLinks where
+  type Unwrapped ListItemLinks =
+    [ListItemLink]
+  _Wrapped' =
+    iso (\(ListItemLinks x) -> x) ListItemLinks
+
+
+
+instance ManyListItemLink ListItemLink where
+  _ManyListItemLink =
+    id
+
+instance ManyListItemLink ListItemLinks where
+  _ManyListItemLink f (ListItemLinks x) =
+    ListItemLinks <$> traverse f x
+
+traverseListItems ::
+  (String -> Bool)
+  -> TagTreePos String
+  -> ListItemLinks
+traverseListItems p (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+        if p href
+          then
+            [ListItemLink href tx]
+          else
+            []
+      li _ =
+        []
+  in  ListItemLinks (x >>= li)
+traverseListItems _ _ =
+  ListItemLinks []
+
 traverseAipBooks ::
   TagTreePos String
-  -> [(String, String)]
-traverseAipBooks (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
-        if ".pdf" `isSuffixOf` href
-          then
-            [(href, tx)]
-          else
-            []
-      li _ =
-        []
-  in  x >>= li
-traverseAipBooks _ =
-  []
+  -> ListItemLinks
+traverseAipBooks =
+  traverseListItems (isSuffixOf ".pdf")
 
-traverseAipCharts1 ::
+traverseAipCharts11 ::
   TagTreePos String
-  -> [(String, String)]
-traverseAipCharts1 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
-        [(href, tx)]
-      li _ =
-        []
-  in  x >>= li
-traverseAipCharts1 _ =
-  []
+  -> ListItemLinks
+traverseAipCharts11 =
+  traverseListItems (const True)
 
-traverseAipCharts2 ::
+traverseAipCharts3 ::
   TagTreePos String
-  -> [(String, String)]
-traverseAipCharts2 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
-        if ".pdf" `isSuffixOf` href
-          then
-            [(href, tx)]
-          else
-            []
-      li _ =
-        []
-  in  x >>= li
-traverseAipCharts2 _ =
-  []
+  -> ListItemLinks
+traverseAipCharts3 =
+  traverseListItems (isSuffixOf ".pdf")
 
 traverseAip_SUP_AIC ::
   TagTreePos String
@@ -176,71 +215,104 @@ traverseAip_SUP_AIC _ =
 
 traverseDAP2 ::
   TagTreePos String
-  -> [(String, String)]
-traverseDAP2 (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
-        if ".htm" `isSuffixOf` href
-          then
-            [(href, tx)]
-          else
-            []
-      li _ =
-        []
-  in  x >>= li
-traverseDAP2 _ =
-  []
+  -> ListItemLinks
+traverseDAP2 =
+  traverseListItems (isSuffixOf ".htm")
+
+data ErsaAerodrome =
+  ErsaAerodrome
+    String
+    String
+    (Maybe String)
+  deriving (Eq, Ord, Show)
+
+newtype ErsaAerodromes =
+  ErsaAerodromes
+    [ErsaAerodrome]
+  deriving (Eq, Ord, Show)
+
+instance Semigroup ErsaAerodromes where
+  ErsaAerodromes x <> ErsaAerodromes y =
+    ErsaAerodromes (x <> y)
+
+instance Monoid ErsaAerodromes where
+  mappend =
+    (<>)
+  mempty =
+    ErsaAerodromes []
+
+data Ersa =
+  Ersa
+    ListItemLinks
+    ErsaAerodromes
+  deriving (Eq, Ord, Show)
+  
+instance Semigroup Ersa where
+  Ersa l1 a1 <> Ersa l2 a2 =
+    Ersa (l1 <> l2) (a1 <> a2)
+
+instance Monoid Ersa where
+  mappend =
+    (<>)
+  mempty =
+    Ersa mempty mempty
+
+traverseErsaAerodromes ::
+  TagTreePos String
+  -> ErsaAerodromes
+traverseErsaAerodromes (TagTreePos (TagBranch "tr" [] (TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText aerodrome)] : TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)] : r)) _ _ _) =
+  ErsaAerodromes [ErsaAerodrome aerodrome fac_href $ case r of
+                                          TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)] : _ : _ ->
+                                            Just rds_href
+                                          _ ->
+                                            Nothing]
+traverseErsaAerodromes _ =
+  ErsaAerodromes []
+
+traverseErsaDocs ::
+  TagTreePos String
+  -> ListItemLinks
+traverseErsaDocs =
+  traverseListItems (isSuffixOf ".pdf")
 
 traverseErsa ::
   TagTreePos String
-  -> ([(String, String)], [(String, String, Maybe String)])
-traverseErsa (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
-        if ".pdf" `isSuffixOf` href
-          then
-            [(href, tx)]
-          else
-            []
-      li _ =
-        []
-  in  (x >>= li, [])
-traverseErsa (TagTreePos (TagBranch "tr" [] (TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText aerodrome)] : TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)] : r)) _ _ _) =
-  ([], [(aerodrome, fac_href, case r of
-                                TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)] : _ : _ ->
-                                  Just rds_href
-                                _ ->
-                                  Nothing)])
-traverseErsa _ =
-  ([], [])
+  -> Ersa
+traverseErsa =
+  Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes
+
+traverseAipHtmlRequestGet ::
+  (HStream str, Monoid a, Text.StringLike.StringLike str) =>
+  (TagTreePos str -> a)
+  -> String
+  -> ExceptT ConnErrorHttp4xx IO a
+traverseAipHtmlRequestGet k u =
+  foldMap (traverseTree k . fromTagTree) . parseTree <$> doRequest (aipRequestGet u "")
 
 run2 ::
   AipDocument
   -> ExceptT ConnErrorHttp4xx IO AipDocument2
 run2 (Aip_Book u t) =
-  do  r <- doRequest (aipRequestGet u "")
-      let q = foldMap (traverseTree traverseAipBooks . fromTagTree) (parseTree r)
+  do  q <- traverseAipHtmlRequestGet traverseAipBooks u
       pure (Aip_Book2 u t q)
 run2 (Aip_Charts u t) =
-  do  r <- doRequest (aipRequestGet u "")
-      let q = foldMap (traverseTree traverseAipCharts1 . fromTagTree) (parseTree r)
-      q' <- traverse (\(u', t') ->  do  r' <- doRequest (aipRequestGet u' "")
-                                        let n = foldMap (traverseTree traverseAipCharts2 . fromTagTree) (parseTree r')
-                                        pure (u', n, t')) q
+  do  qq <- traverseAipHtmlRequestGet traverseAipCharts11 u
+      q' <- traverse (\l@(ListItemLink u' _) ->
+              do  n <- traverseAipHtmlRequestGet traverseAipCharts3 u'
+                  pure (l, n)) (qq ^. _Wrapped)
       pure (Aip_Charts2 u t q')
 run2 (Aip_SUP_AIC u) =
-  do  r <- doRequest (aipRequestGet u "") :: ExceptT ConnErrorHttp4xx IO String
-      let q = foldMap (traverseTree traverseAip_SUP_AIC . fromTagTree) (parseTree r)
+  do  q <- traverseAipHtmlRequestGet traverseAip_SUP_AIC u
       pure (Aip_SUP_AIC2 u q)
 run2 (Aip_Summary_SUP_AIC u t) =
   pure (Aip_Summary_SUP_AIC2 u t)
 run2 (Aip_DAP u t) =
-  do  r <- doRequest (aipRequestGet u "")
-      let q = foldMap (traverseTree traverseDAP2 . fromTagTree) (parseTree r)
+  do  q <- traverseAipHtmlRequestGet traverseDAP2 u
       pure (Aip_DAP2 u t q)
 run2 (Aip_DAH u t) =
   pure (Aip_DAH2 u t)
 run2 (Aip_ERSA u t) =
-  do  r <- doRequest (aipRequestGet u "")
-      let q = foldMap (traverseTree traverseErsa . fromTagTree) (parseTree r)
+  do  q <- traverseAipHtmlRequestGet traverseErsa u
       pure (Aip_ERSA2 u t q)
 run2 (Aip_AandB_Charts u) =
   pure (Aip_AandB_Charts2 u)
@@ -332,13 +404,13 @@ instance Monoid AipDocuments where
     AipDocuments (x `mappend` y)
 
 data AipDocument2 =
-  Aip_Book2 String String [(String, String)]
-  | Aip_Charts2 String String [(String, [(String, String)], String)]
+  Aip_Book2 String String ListItemLinks
+  | Aip_Charts2 String String [(ListItemLink, ListItemLinks)]
   | Aip_SUP_AIC2 String [(String, String, String, String, String)]
   | Aip_Summary_SUP_AIC2 String String
-  | Aip_DAP2 String String [(String, String)]
+  | Aip_DAP2 String String ListItemLinks
   | Aip_DAH2 String String
-  | Aip_ERSA2 String String ([(String, String)], [(String, String, Maybe String)])
+  | Aip_ERSA2 String String Ersa
   | Aip_AandB_Charts2 String
   deriving (Eq, Ord, Show)
 
