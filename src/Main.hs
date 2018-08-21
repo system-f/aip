@@ -203,10 +203,12 @@ traverseErsa (TagTreePos (TagBranch "ul" [] x) _ _ _) =
       li _ =
         []
   in  (x >>= li, [])
-traverseErsa (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _), TagBranch "td" _ [TagLeaf (TagText aerodrome)], TagLeaf (TagText _), TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)], TagLeaf (TagText _), TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)], _]) _ _ _) =
-  ([], [(aerodrome, fac_href, Just rds_href)]) -- todo
-traverseErsa (TagTreePos (TagBranch "tr" [] (TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText aerodrome)] : TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)] : _)) _ _ _) =
-  ([], [(aerodrome, fac_href, Nothing)]) -- todo
+traverseErsa (TagTreePos (TagBranch "tr" [] (TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText aerodrome)] : TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", fac_href)] [TagLeaf (TagText "FAC")], TagLeaf (TagText _)] : r)) _ _ _) =
+  ([], [(aerodrome, fac_href, case r of
+                                TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)] : _ : _ ->
+                                  Just rds_href
+                                _ ->
+                                  Nothing)])
 traverseErsa _ =
   ([], [])
 
