@@ -117,7 +117,7 @@ runY ::
   -> ExceptT ConnErrorHttp4xx IO (UTCTime, [FilePath])
 runY s =
   do  t <- liftIO getCurrentTime
-      let a = foldMap (traverseTree traverseAipDocuments' . fromTagTree) (parseTree s)
+      let a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree s)
       AipDocuments' tr2 <- runs3 a
       liftIO $ Papa.mapM_ print tr2
       pure (t, ["file", "file2"])
@@ -306,52 +306,52 @@ main =
       x <- runExceptT $ runX "/tmp/abc"
       print x
 
-traverseAipDocuments' ::
+traverseAipDocuments ::
   TagTreePos String
-  -> AipDocuments'1
-traverseAipDocuments' (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+  -> AipDocuments1
+traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
   let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
-        [Aip_Book' href tx ()]
+        [Aip_Book href tx ()]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
-        [Aip_Charts' href tx ()]
+        [Aip_Charts href tx ()]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
-        [Aip_SUP_AIC' href ()]
+        [Aip_SUP_AIC href ()]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
-        [Aip_DAP' href tx ()]
+        [Aip_DAP href tx ()]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
-        [Aip_DAH' href tx]
+        [Aip_DAH href tx]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
-        [Aip_ERSA' href tx ()]
+        [Aip_ERSA href tx ()]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
-        [Aip_AandB_Charts' href]
+        [Aip_AandB_Charts href]
       li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
         let str = "Summary of SUP/AIC Current"
             (p, s) = splitAt (length str) tx
         in  if p == str then
-              [Aip_Summary_SUP_AIC' href s]
+              [Aip_Summary_SUP_AIC href s]
             else
               [] 
       li _ =
         []
   in  AipDocuments' (x >>= li)
-traverseAipDocuments' _ =
+traverseAipDocuments _ =
   mempty
 
 
-data AipDocument' book charts sup_aic dap ersa =
-  Aip_Book' String String book
-  | Aip_Charts' String String charts
-  | Aip_SUP_AIC' String sup_aic
-  | Aip_Summary_SUP_AIC' String String
-  | Aip_DAP' String String dap
-  | Aip_DAH' String String
-  | Aip_ERSA' String String ersa
-  | Aip_AandB_Charts' String
+data AipDocument book charts sup_aic dap ersa =
+  Aip_Book String String book
+  | Aip_Charts String String charts
+  | Aip_SUP_AIC String sup_aic
+  | Aip_Summary_SUP_AIC String String
+  | Aip_DAP String String dap
+  | Aip_DAH String String
+  | Aip_ERSA String String ersa
+  | Aip_AandB_Charts String
   deriving (Eq, Ord, Show)
 
 newtype AipDocuments' book charts sup_aic dap ersa =
   AipDocuments'
-    [AipDocument' book charts sup_aic dap ersa]
+    [AipDocument book charts sup_aic dap ersa]
   deriving (Eq, Ord, Show)
 
 instance Monoid (AipDocuments' book charts sup_aic dap ersa) where
@@ -361,64 +361,64 @@ instance Monoid (AipDocuments' book charts sup_aic dap ersa) where
   AipDocuments' x `mappend` AipDocuments' y =
     AipDocuments' (x `mappend` y)
 
-type AipDocuments'1 =
+type AipDocuments1 =
   AipDocuments' () () () () ()
 
-type AipDocument'2 =
-  AipDocument' ListItemLinks ListItemLinks1 Aip_SUP_and_AICs ListItemLinks Ersa
+type AipDocument2 =
+  AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs ListItemLinks Ersa
 
 runBook ::
-  AipDocument' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument' ListItemLinks charts sup_aic dap ersa)
-runBook (Aip_Book' u t _) =
-  Aip_Book' u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u
-runBook (Aip_Charts' u t x) =
-  pure (Aip_Charts' u t x)
-runBook (Aip_SUP_AIC' u x) =
-  pure (Aip_SUP_AIC' u x)
-runBook (Aip_Summary_SUP_AIC' u x) =
-  pure (Aip_Summary_SUP_AIC' u x)
-runBook (Aip_DAP' u t x) =
-  pure (Aip_DAP' u t x)
-runBook (Aip_DAH' u x) =
-  pure (Aip_DAH' u x)
-runBook (Aip_ERSA' u t x) =
-  pure (Aip_ERSA' u t x)
-runBook (Aip_AandB_Charts' x) =
-  pure (Aip_AandB_Charts' x)
+  AipDocument book charts sup_aic dap ersa
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument ListItemLinks charts sup_aic dap ersa)
+runBook (Aip_Book u t _) =
+  Aip_Book u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u
+runBook (Aip_Charts u t x) =
+  pure (Aip_Charts u t x)
+runBook (Aip_SUP_AIC u x) =
+  pure (Aip_SUP_AIC u x)
+runBook (Aip_Summary_SUP_AIC u x) =
+  pure (Aip_Summary_SUP_AIC u x)
+runBook (Aip_DAP u t x) =
+  pure (Aip_DAP u t x)
+runBook (Aip_DAH u x) =
+  pure (Aip_DAH u x)
+runBook (Aip_ERSA u t x) =
+  pure (Aip_ERSA u t x)
+runBook (Aip_AandB_Charts x) =
+  pure (Aip_AandB_Charts x)
 
 runCharts ::
-  AipDocument' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument' book ListItemLinks1 sup_aic dap ersa)
-runCharts (Aip_Book' u t x) =
-  pure (Aip_Book' u t x)
-runCharts (Aip_Charts' u t _) =
+  AipDocument book charts sup_aic dap ersa
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument book ListItemLinks1 sup_aic dap ersa)
+runCharts (Aip_Book u t x) =
+  pure (Aip_Book u t x)
+runCharts (Aip_Charts u t _) =
   do  i <- traverseAipHtmlRequestGet (traverseListItems (const True)) u
       p <- traverse (\l@(ListItemLink u' _) ->
               do  n <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u'
                   pure (l :| n ^. _Wrapped)) (i ^. _Wrapped)
-      pure (Aip_Charts' u t (ListItemLinks1 p))
-runCharts (Aip_SUP_AIC' u x) =
-  pure (Aip_SUP_AIC' u x)
-runCharts (Aip_Summary_SUP_AIC' u x) =
-  pure (Aip_Summary_SUP_AIC' u x)
-runCharts (Aip_DAP' u t x) =
-  pure (Aip_DAP' u t x)
-runCharts (Aip_DAH' u x) =
-  pure (Aip_DAH' u x)
-runCharts (Aip_ERSA' u t x) =
-  pure (Aip_ERSA' u t x)
-runCharts (Aip_AandB_Charts' x) =
-  pure (Aip_AandB_Charts' x)
+      pure (Aip_Charts u t (ListItemLinks1 p))
+runCharts (Aip_SUP_AIC u x) =
+  pure (Aip_SUP_AIC u x)
+runCharts (Aip_Summary_SUP_AIC u x) =
+  pure (Aip_Summary_SUP_AIC u x)
+runCharts (Aip_DAP u t x) =
+  pure (Aip_DAP u t x)
+runCharts (Aip_DAH u x) =
+  pure (Aip_DAH u x)
+runCharts (Aip_ERSA u t x) =
+  pure (Aip_ERSA u t x)
+runCharts (Aip_AandB_Charts x) =
+  pure (Aip_AandB_Charts x)
 
 runSUP_AIC ::
-  AipDocument' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument' book charts Aip_SUP_and_AICs dap ersa)
-runSUP_AIC (Aip_Book' u t x) =
-  pure (Aip_Book' u t x)
-runSUP_AIC (Aip_Charts' u t x) =
-  pure (Aip_Charts' u t x)
-runSUP_AIC (Aip_SUP_AIC' u _) =
+  AipDocument book charts sup_aic dap ersa
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts Aip_SUP_and_AICs dap ersa)
+runSUP_AIC (Aip_Book u t x) =
+  pure (Aip_Book u t x)
+runSUP_AIC (Aip_Charts u t x) =
+  pure (Aip_Charts u t x)
+runSUP_AIC (Aip_SUP_AIC u _) =
   let traverseAip_SUP_AIC ::
         TagTreePos String
         -> Aip_SUP_and_AICs
@@ -426,54 +426,54 @@ runSUP_AIC (Aip_SUP_AIC' u _) =
         Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum href title pubdate effdate]
       traverseAip_SUP_AIC _ =
         mempty
-  in  Aip_SUP_AIC' u <$> traverseAipHtmlRequestGet traverseAip_SUP_AIC u
-runSUP_AIC (Aip_Summary_SUP_AIC' u x) =
-  pure (Aip_Summary_SUP_AIC' u x)
-runSUP_AIC (Aip_DAP' u t x) =
-  pure (Aip_DAP' u t x)
-runSUP_AIC (Aip_DAH' u x) =
-  pure (Aip_DAH' u x)
-runSUP_AIC (Aip_ERSA' u t x) =
-  pure (Aip_ERSA' u t x)
-runSUP_AIC (Aip_AandB_Charts' x) =
-  pure (Aip_AandB_Charts' x)
+  in  Aip_SUP_AIC u <$> traverseAipHtmlRequestGet traverseAip_SUP_AIC u
+runSUP_AIC (Aip_Summary_SUP_AIC u x) =
+  pure (Aip_Summary_SUP_AIC u x)
+runSUP_AIC (Aip_DAP u t x) =
+  pure (Aip_DAP u t x)
+runSUP_AIC (Aip_DAH u x) =
+  pure (Aip_DAH u x)
+runSUP_AIC (Aip_ERSA u t x) =
+  pure (Aip_ERSA u t x)
+runSUP_AIC (Aip_AandB_Charts x) =
+  pure (Aip_AandB_Charts x)
 
 runDAP ::
-  AipDocument' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument' book charts sup_aic ListItemLinks ersa)
-runDAP (Aip_Book' u t x) =
-  pure (Aip_Book' u t x)
-runDAP (Aip_Charts' u t x) =
-  pure (Aip_Charts' u t x)
-runDAP (Aip_SUP_AIC' u x) =
-  pure (Aip_SUP_AIC' u x)
-runDAP (Aip_Summary_SUP_AIC' u x) =
-  pure (Aip_Summary_SUP_AIC' u x)
-runDAP (Aip_DAP' u t _) =
-  Aip_DAP' u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".htm")) u
-runDAP (Aip_DAH' u x) =
-  pure (Aip_DAH' u x)
-runDAP (Aip_ERSA' u t x) =
-  pure (Aip_ERSA' u t x)
-runDAP (Aip_AandB_Charts' x) =
-  pure (Aip_AandB_Charts' x)
+  AipDocument book charts sup_aic dap ersa
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic ListItemLinks ersa)
+runDAP (Aip_Book u t x) =
+  pure (Aip_Book u t x)
+runDAP (Aip_Charts u t x) =
+  pure (Aip_Charts u t x)
+runDAP (Aip_SUP_AIC u x) =
+  pure (Aip_SUP_AIC u x)
+runDAP (Aip_Summary_SUP_AIC u x) =
+  pure (Aip_Summary_SUP_AIC u x)
+runDAP (Aip_DAP u t _) =
+  Aip_DAP u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".htm")) u
+runDAP (Aip_DAH u x) =
+  pure (Aip_DAH u x)
+runDAP (Aip_ERSA u t x) =
+  pure (Aip_ERSA u t x)
+runDAP (Aip_AandB_Charts x) =
+  pure (Aip_AandB_Charts x)
 
 runERSA ::
-  AipDocument' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument' book charts sup_aic dap Ersa)
-runERSA (Aip_Book' u t x) =
-  pure (Aip_Book' u t x)
-runERSA (Aip_Charts' u t x) =
-  pure (Aip_Charts' u t x)
-runERSA (Aip_SUP_AIC' u x) =
-  pure (Aip_SUP_AIC' u x)
-runERSA (Aip_Summary_SUP_AIC' u x) =
-  pure (Aip_Summary_SUP_AIC' u x)
-runERSA (Aip_DAP' u t x) =
-  pure (Aip_DAP' u t x)
-runERSA (Aip_DAH' u x) =
-  pure (Aip_DAH' u x)
-runERSA (Aip_ERSA' u t _) =
+  AipDocument book charts sup_aic dap ersa
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic dap Ersa)
+runERSA (Aip_Book u t x) =
+  pure (Aip_Book u t x)
+runERSA (Aip_Charts u t x) =
+  pure (Aip_Charts u t x)
+runERSA (Aip_SUP_AIC u x) =
+  pure (Aip_SUP_AIC u x)
+runERSA (Aip_Summary_SUP_AIC u x) =
+  pure (Aip_Summary_SUP_AIC u x)
+runERSA (Aip_DAP u t x) =
+  pure (Aip_DAP u t x)
+runERSA (Aip_DAH u x) =
+  pure (Aip_DAH u x)
+runERSA (Aip_ERSA u t _) =
   let traverseErsaAerodromes ::
         TagTreePos String
         -> ErsaAerodromes
@@ -494,17 +494,16 @@ runERSA (Aip_ERSA' u t _) =
         -> ListItemLinks
       traverseErsaDocs =
         traverseListItems (isSuffixOf ".pdf")
-  in  Aip_ERSA' u t <$> traverseAipHtmlRequestGet (Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes) u
-runERSA (Aip_AandB_Charts' x) =
-  pure (Aip_AandB_Charts' x)
+  in  Aip_ERSA u t <$> traverseAipHtmlRequestGet (Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes) u
+runERSA (Aip_AandB_Charts x) =
+  pure (Aip_AandB_Charts x)
 
 runAipDocument ::
-  AipDocument' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO AipDocument'2
+  AipDocument book charts sup_aic dap ersa
+  -> ExceptT ConnErrorHttp4xx IO AipDocument2
 runAipDocument =
   runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
   
-
 
 
 
