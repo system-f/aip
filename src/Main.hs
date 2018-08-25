@@ -488,8 +488,6 @@ instance Monoid DAPDocs where
   mempty =
     DAPDocs mempty
 
-undefined = undefined
-
 runDAP ::
   AipDocument book charts sup_aic dap ersa
   -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic DAPDocs ersa)
