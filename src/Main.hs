@@ -45,7 +45,7 @@ data AipRecord =
   AipRecord
     SHA1
     UTCTime
-    [FilePath]
+    (AipDocuments ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa)
   deriving (Eq, Show)
 
 instance FromJSON AipRecord where
@@ -111,22 +111,6 @@ aiprecords ::
   FilePath
 aiprecords =
   "aip-records.json"
-
-runY ::
-  String
-  -> ExceptT ConnErrorHttp4xx IO (UTCTime, [FilePath])
-runY s =
-  do  t <- liftIO getCurrentTime
-      let a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree s)
-      AipDocuments' tr2 <- runs3 a
-      liftIO $ Papa.mapM_ print tr2
-      pure (t, ["file", "file2"])
-
-runs3 ::
-  AipDocuments' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocuments' ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa)
-runs3 (AipDocuments' d) =
-  AipDocuments' <$> traverse runAipDocument d
 
 data ListItemLink =
   ListItemLink
@@ -292,8 +276,10 @@ runX dir =
           let w = x >>= findOf _ManyAipRecord (\(AipRecord h _ _) -> h == s)
           case w of
             Nothing ->
-              do  (t, p) <- runY c
-                  let r = AipRecord s t p
+              do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
+                  tr2 <- AipDocuments <$> traverse runAipDocument a
+                  t <- liftIO getCurrentTime
+                  let r = AipRecord s t tr2
                   liftIO $ encodeFile aiprecords' (r `cons` fromMaybe mempty x)
                   pure r
             Just v ->
@@ -333,7 +319,7 @@ traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
               [] 
       li _ =
         []
-  in  AipDocuments' (x >>= li)
+  in  AipDocuments (x >>= li)
 traverseAipDocuments _ =
   mempty
 
@@ -348,23 +334,32 @@ data AipDocument book charts sup_aic dap ersa =
   | Aip_AandB_Charts String
   deriving (Eq, Ord, Show)
 
-newtype AipDocuments' book charts sup_aic dap ersa =
-  AipDocuments'
+newtype AipDocuments book charts sup_aic dap ersa =
+  AipDocuments
     [AipDocument book charts sup_aic dap ersa]
   deriving (Eq, Ord, Show)
 
-instance Monoid (AipDocuments' book charts sup_aic dap ersa) where
+instance Monoid (AipDocuments book charts sup_aic dap ersa) where
   mempty =
-    AipDocuments'
+    AipDocuments
       mempty
-  AipDocuments' x `mappend` AipDocuments' y =
-    AipDocuments' (x `mappend` y)
+  AipDocuments x `mappend` AipDocuments y =
+    AipDocuments (x `mappend` y)
 
 type AipDocuments1 =
-  AipDocuments' () () () () ()
+  AipDocuments () () () () ()
 
 type AipDocument2 =
   AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa
+
+
+instance FromJSON (AipDocuments book charts sup_aic dap ersa) where
+  parseJSON =
+    mempty -- todo
+
+instance ToJSON (AipDocuments book charts sup_aic dap ersa) where
+  toJSON _ =
+    Null -- todo
 
 runBook ::
   AipDocument book charts sup_aic dap ersa
