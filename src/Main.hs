@@ -122,9 +122,12 @@ runY s =
       liftIO $ Papa.mapM_ print tr2
       pure (t, ["file", "file2"])
 
+{-
 runs3 ::
   AipDocuments' book charts sup_aic dap ersa
   -> ExceptT ConnErrorHttp4xx IO (AipDocuments' ListItemLinks ListItemLinks1 Aip_SUP_and_AICs ListItemLinks Ersa)
+-}
+
 runs3 (AipDocuments' d) =
   AipDocuments' <$> traverse runAipDocument d
 
@@ -438,9 +441,48 @@ runSUP_AIC (Aip_ERSA u t x) =
 runSUP_AIC (Aip_AandB_Charts x) =
   pure (Aip_AandB_Charts x)
 
+undefined = undefined
+
+data DAPType =
+  SpecNotManTOCDAP
+  | ChecklistTOCDAP
+  | LegendInfoTablesTOCDAP
+  | AeroProcChartsTOCDAP
+  deriving (Eq, Ord, Show)
+
+data DAPType3 =
+  SpecNotManTOCDAP3 String [(String, String, String)]
+  | ChecklistTOCDAP3 String [(String, String, String)]
+  | LegendInfoTablesTOCDAP3 String [(String, String, String)]
+  | AeroProcChartsTOCDAP3 String [(String, String, String)]
+  deriving (Eq, Ord, Show)
+
+traverseDAP' ::
+  TagTreePos String
+  -> [(DAPType, String)]
+traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefSpecNotManTOC)] [TagLeaf (TagText "Special Notices & Manuscript")]]) _ _ _) =
+  [(SpecNotManTOCDAP, hrefSpecNotManTOC)]
+traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefChecklistTOC)] [TagLeaf (TagText "Checklist")]]) _ _ _) =
+  [(ChecklistTOCDAP, hrefChecklistTOC)]
+traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefLegendInfoTablesTOC)] [TagLeaf (TagText "Legend. Info & Tables")]]) _ _ _) =
+  [(LegendInfoTablesTOCDAP, hrefLegendInfoTablesTOC)]
+traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefAeroProcChartsTOC)] [TagLeaf (TagText "Aerodrome & Procedure Charts")]]) _ _ _) =
+  [(AeroProcChartsTOCDAP, hrefAeroProcChartsTOC)]
+traverseDAP' _ =
+  []
+
+traverseDAP2 ::
+  TagTreePos String
+  -> [(String, String, String)]
+traverseDAP2 (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
+  [(href, date, amend)]
+traverseDAP2 _ =
+  []
+
+
 runDAP ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic ListItemLinks ersa)
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic [((DAPType, String), [(String, String, String)])] ersa)
 runDAP (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runDAP (Aip_Charts u t x) =
@@ -450,7 +492,21 @@ runDAP (Aip_SUP_AIC u x) =
 runDAP (Aip_Summary_SUP_AIC u x) =
   pure (Aip_Summary_SUP_AIC u x)
 runDAP (Aip_DAP u t _) =
-  Aip_DAP u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".htm")) u
+  let qq :: ExceptT ConnErrorHttp4xx IO [((DAPType, String), [(String, String, String)])]
+      qq =
+        do  g <- doRequest (aipRequestGet u "") :: ExceptT ConnErrorHttp4xx IO String
+            let p :: [(DAPType, String)]; p = foldMap (traverseTree traverseDAP' . fromTagTree) (parseTree g)
+            let hh :: String -> ExceptT ConnErrorHttp4xx IO [(String, String, String)]
+                hh uu =
+                  do  k <- doRequest (aipRequestGet uu "")
+                      let oo = foldMap (traverseTree traverseDAP2 . fromTagTree) (parseTree k)
+                      pure oo
+            let e :: (DAPType, String) -> ExceptT ConnErrorHttp4xx IO ((DAPType, String), [(String, String, String)])
+                e z@(_, u') =
+                  (\x -> (z, x)) <$> hh u'
+            mapM e p
+  in  do  s <- qq
+          pure (Aip_DAP u t s)
 runDAP (Aip_DAH u x) =
   pure (Aip_DAH u x)
 runDAP (Aip_ERSA u t x) =
@@ -498,11 +554,14 @@ runERSA (Aip_ERSA u t _) =
 runERSA (Aip_AandB_Charts x) =
   pure (Aip_AandB_Charts x)
 
+{-
 runAipDocument ::
   AipDocument book charts sup_aic dap ersa
   -> ExceptT ConnErrorHttp4xx IO AipDocument2
+-}
 runAipDocument =
-  runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
+  -- runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
+  runDAP
   
 
 
