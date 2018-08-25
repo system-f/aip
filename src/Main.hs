@@ -9,7 +9,7 @@ module Main(
   main
 ) where
 
-import Control.Monad((>=>))
+import Control.Monad((>=>), fail)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import Data.Aviation.Aip.ConnErrorHttp4xx
@@ -24,9 +24,11 @@ import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup.Tree.Zipper
 import Codec.Binary.UTF8.String
 import Data.Aeson
+import qualified Data.Vector as Vector
 import Data.Digest.SHA1
 import Network.TCP
 import Text.StringLike(StringLike)
+import qualified Data.HashMap.Strict as HashMap
 
 newtype SHA1 =
   SHA1
@@ -54,11 +56,11 @@ instance FromJSON AipRecord where
       AipRecord <$>
         v .: "sha1" <*>
         v .: "utc" <*>
-        v .: "files"
+        v .: "documents"
 
 instance ToJSON AipRecord where
   toJSON (AipRecord s t p) =
-    object ["sha1" .= s, "utc" .= t, "files" .= p]
+    object ["sha1" .= s, "utc" .= t, "documents" .= p]
 
 newtype AipRecords =
   AipRecords
@@ -144,8 +146,6 @@ instance Wrapped ListItemLinks where
     [ListItemLink]
   _Wrapped' =
     iso (\(ListItemLinks x) -> x) ListItemLinks
-
-
 
 instance ManyListItemLink ListItemLink where
   _ManyListItemLink =
@@ -352,15 +352,210 @@ type AipDocuments1 =
 type AipDocument2 =
   AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa
 
-
-instance FromJSON (AipDocuments book charts sup_aic dap ersa) where
+instance FromJSON ListItemLinks where
   parseJSON =
-    mempty -- todo
+    withArray "ListItemLinks" $ \v ->
+      ListItemLinks <$> traverse parseJSON (Vector.toList v)
 
-instance ToJSON (AipDocuments book charts sup_aic dap ersa) where
-  toJSON _ =
-    Null -- todo
+instance FromJSON ListItemLink where
+  parseJSON =
+    withObject "ListItemLink" $ \v ->
+      ListItemLink <$>
+        v .: "href" <*>
+        v .: "text" 
 
+instance ToJSON ListItemLink where
+  toJSON (ListItemLink u t) =
+    object ["href" .= u, "text" .= t]
+
+instance FromJSON ListItemLinks1 where
+  parseJSON =
+    withArray "ListItemLinks1" $ \v ->
+      ListItemLinks1 <$> traverse parseJSON (Vector.toList v)
+
+instance ToJSON ListItemLinks1 where
+  toJSON (ListItemLinks1 x) =
+    toJSON x
+
+instance ToJSON ListItemLinks where
+  toJSON (ListItemLinks x) =
+    toJSON x
+
+instance FromJSON Aip_SUP_and_AICs where
+  parseJSON =
+    withArray "Aip_SUP_and_AICs" $ \v ->
+      Aip_SUP_and_AICs <$> traverse parseJSON (Vector.toList v)
+
+instance ToJSON Aip_SUP_and_AICs where
+  toJSON (Aip_SUP_and_AICs x) =
+    toJSON x
+
+instance FromJSON Aip_SUP_and_AIC where
+  parseJSON =
+    withObject "Aip_SUP_and_AIC" $ \v ->
+      Aip_SUP_and_AIC <$>
+        v .: "docnum" <*>
+        v .: "href" <*>
+        v .: "title" <*>
+        v .: "pubdate" <*>
+        v .: "effdate"
+
+instance ToJSON Aip_SUP_and_AIC where
+  toJSON (Aip_SUP_and_AIC docnum href title pubdate effdate) =
+    object ["docnum" .= docnum, "href" .= href, "title" .= title, "pubdate" .= pubdate, "effdate" .= effdate]
+
+instance FromJSON DAPDocs where
+  parseJSON =
+    withArray "DAPDocs" $ \v ->
+      DAPDocs <$> traverse parseJSON (Vector.toList v)
+
+instance ToJSON DAPDocs where
+  toJSON (DAPDocs x) =
+    toJSON x
+
+instance FromJSON DAPDoc where
+  parseJSON =
+    withObject "DAPDoc" $ \v ->
+      DAPDoc <$>
+        v .: "type" <*>
+        v .: "href" <*>
+        v .: "entries"
+
+instance ToJSON DAPDoc where
+  toJSON (DAPDoc typ href entries) =
+    object ["type" .= typ, "href" .= href, "entries" .= entries]
+
+instance FromJSON aerodrome => FromJSON (DAPType aerodrome) where
+  parseJSON (Object z) =
+    case HashMap.toList z of
+      [("SpecNotManTOCDAP", q)] ->
+        (\() -> SpecNotManTOCDAP) <$> parseJSON q   
+      [("ChecklistTOCDAP", q)] ->
+        (\() -> ChecklistTOCDAP) <$> parseJSON q
+      [("LegendInfoTablesTOCDAP", q)] ->
+        (\() -> LegendInfoTablesTOCDAP) <$> parseJSON q
+      [("AeroProcChartsTOCDAP", q)] ->
+        AeroProcChartsTOCDAP <$> parseJSON q
+      _ ->
+        fail "DAPType"
+  parseJSON _ =
+    fail "DAPType"
+
+instance ToJSON aerodrome => ToJSON (DAPType aerodrome) where
+  toJSON SpecNotManTOCDAP =
+    object ["SpecNotManTOCDAP" .= toJSON ()]
+  toJSON ChecklistTOCDAP =
+    object ["ChecklistTOCDAP" .= toJSON ()]
+  toJSON LegendInfoTablesTOCDAP =
+    object ["LegendInfoTablesTOCDAP" .= toJSON ()]
+  toJSON (AeroProcChartsTOCDAP x) =
+    object ["AeroProcChartsTOCDAP" .= toJSON x]
+
+instance FromJSON DAPEntries where
+  parseJSON =
+    withArray "DAPEntries" $ \v ->
+      DAPEntries <$> traverse parseJSON (Vector.toList v)
+
+instance ToJSON DAPEntries where
+  toJSON (DAPEntries x) =
+    toJSON x
+
+instance FromJSON DAPEntry where
+  parseJSON =
+    withObject "DAPEntry" $ \v ->
+      DAPEntry <$>
+        v .: "href" <*>
+        v .: "text" <*>
+        v .: "date" <*>
+        v .: "amendment"
+
+instance ToJSON DAPEntry where
+  toJSON (DAPEntry href text date amendment) =
+    object ["href" .= href, "text" .= text, "date" .= date, "amendment" .= amendment]
+
+instance FromJSON Ersa where
+  parseJSON =
+    withObject "Ersa" $ \v ->
+      Ersa <$>
+        v .: "links" <*>
+        v .: "aerodromes"
+
+instance ToJSON Ersa where
+  toJSON (Ersa links aerodromes) =
+    object ["links" .= links, "aerodromes" .= aerodromes]
+
+instance FromJSON ErsaAerodromes where
+  parseJSON =
+    withArray "ErsaAerodromes" $ \v ->
+      ErsaAerodromes <$> traverse parseJSON (Vector.toList v)
+
+instance ToJSON ErsaAerodromes where
+  toJSON (ErsaAerodromes x) =
+    toJSON x
+
+instance FromJSON ErsaAerodrome where
+  parseJSON =
+    withObject "ErsaAerodrome" $ \v ->
+      ErsaAerodrome <$>
+        v .: "aerodrome" <*>
+        v .: "fac_href" <*>
+        v .: "rds_href"
+
+instance ToJSON ErsaAerodrome where
+  toJSON (ErsaAerodrome aerodrome fac rds) =
+    object ["aerodrome" .= aerodrome, "fac_href" .= fac, "rds_href" .= rds]
+
+instance (FromJSON book, FromJSON charts, FromJSON sup_aic, FromJSON dap, FromJSON ersa) => FromJSON (AipDocuments book charts sup_aic dap ersa) where
+  parseJSON =
+    withArray "AipDocuments" $ \v ->
+      AipDocuments <$> traverse parseJSON (Vector.toList v)
+
+instance (ToJSON book, ToJSON charts, ToJSON sup_aic, ToJSON dap, ToJSON ersa) => ToJSON (AipDocuments book charts sup_aic dap ersa) where
+  toJSON (AipDocuments x) =
+    toJSON x
+
+instance (FromJSON book, FromJSON charts, FromJSON sup_aic, FromJSON dap, FromJSON ersa) => FromJSON (AipDocument book charts sup_aic dap ersa) where
+  parseJSON (Object z) =
+    case HashMap.toList z of
+      [("Aip_Book", q)] ->
+        (\(u, t, x) -> Aip_Book u t x) <$> parseJSON q
+      [("Aip_Charts", q)] ->
+        (\(u, t, x) -> Aip_Charts u t x) <$> parseJSON q
+      [("Aip_SUP_AIC", q)] ->
+        (\(u, x) -> Aip_SUP_AIC u x) <$> parseJSON q
+      [("Aip_Summary_SUP_AIC", q)] ->
+        (\(u, x) -> Aip_Summary_SUP_AIC u x) <$> parseJSON q
+      [("Aip_DAP", q)] ->
+        (\(u, t, x) -> Aip_DAP u t x) <$> parseJSON q
+      [("Aip_DAH", q)] ->
+        (\(u, x) -> Aip_DAH u x) <$> parseJSON q
+      [("Aip_ERSA", q)] ->
+        (\(u, t, x) -> Aip_ERSA u t x) <$> parseJSON q
+      [("Aip_AandB_Charts", q)] ->
+        Aip_AandB_Charts <$> parseJSON q
+      _ ->
+        fail "AipDocument"
+  parseJSON _ =
+    fail "AipDocument"
+    
+instance (ToJSON book, ToJSON charts, ToJSON sup_aic, ToJSON dap, ToJSON ersa) => ToJSON (AipDocument book charts sup_aic dap ersa) where
+  toJSON (Aip_Book u t x) =
+    object ["Aip_Book" .= toJSON (u, t, x)]
+  toJSON (Aip_Charts u t x) =
+    object ["Aip_Charts" .= toJSON (u, t, x)]
+  toJSON (Aip_SUP_AIC u x) =
+    object ["Aip_SUP_AIC" .= toJSON (u, x)]
+  toJSON (Aip_Summary_SUP_AIC u x) =
+    object ["Aip_Summary_SUP_AIC" .= toJSON (u, x)]
+  toJSON (Aip_DAP u t x) =
+    object ["Aip_DAP" .= toJSON (u, t, x)]
+  toJSON (Aip_DAH u x) =
+    object ["Aip_DAH" .= toJSON (u, x)]
+  toJSON (Aip_ERSA u t x) =
+    object ["Aip_ERSA" .= toJSON (u, t, x)]
+  toJSON (Aip_AandB_Charts q) =
+    object ["Aip_AandB_Charts" .= toJSON q]
+  
 runBook ::
   AipDocument book charts sup_aic dap ersa
   -> ExceptT ConnErrorHttp4xx IO (AipDocument ListItemLinks charts sup_aic dap ersa)

@@ -47,6 +47,8 @@ library
                     , Crypto
                     , aeson
                     , vector
+                    , unordered-containers
+                    , text
                     
   ghc-options:
                     -Wall
@@ -104,6 +106,8 @@ executable          aip
                     , Crypto
                     , aeson
                     , vector
+                    , unordered-containers
+                    , text
 
   ghc-options:
                     -Wall
