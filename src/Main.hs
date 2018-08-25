@@ -122,12 +122,9 @@ runY s =
       liftIO $ Papa.mapM_ print tr2
       pure (t, ["file", "file2"])
 
-{-
 runs3 ::
   AipDocuments' book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocuments' ListItemLinks ListItemLinks1 Aip_SUP_and_AICs ListItemLinks Ersa)
--}
-
+  -> ExceptT ConnErrorHttp4xx IO (AipDocuments' ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa)
 runs3 (AipDocuments' d) =
   AipDocuments' <$> traverse runAipDocument d
 
@@ -340,7 +337,6 @@ traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
 traverseAipDocuments _ =
   mempty
 
-
 data AipDocument book charts sup_aic dap ersa =
   Aip_Book String String book
   | Aip_Charts String String charts
@@ -368,7 +364,7 @@ type AipDocuments1 =
   AipDocuments' () () () () ()
 
 type AipDocument2 =
-  AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs ListItemLinks Ersa
+  AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa
 
 runBook ::
   AipDocument book charts sup_aic dap ersa
@@ -441,8 +437,6 @@ runSUP_AIC (Aip_ERSA u t x) =
 runSUP_AIC (Aip_AandB_Charts x) =
   pure (Aip_AandB_Charts x)
 
-undefined = undefined
-
 data DAPType =
   SpecNotManTOCDAP
   | ChecklistTOCDAP
@@ -450,39 +444,55 @@ data DAPType =
   | AeroProcChartsTOCDAP
   deriving (Eq, Ord, Show)
 
-data DAPType3 =
-  SpecNotManTOCDAP3 String [(String, String, String)]
-  | ChecklistTOCDAP3 String [(String, String, String)]
-  | LegendInfoTablesTOCDAP3 String [(String, String, String)]
-  | AeroProcChartsTOCDAP3 String [(String, String, String)]
+data DAPEntry =
+  DAPEntry
+    String -- href
+    String -- date
+    String -- amend
   deriving (Eq, Ord, Show)
 
-traverseDAP' ::
-  TagTreePos String
-  -> [(DAPType, String)]
-traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefSpecNotManTOC)] [TagLeaf (TagText "Special Notices & Manuscript")]]) _ _ _) =
-  [(SpecNotManTOCDAP, hrefSpecNotManTOC)]
-traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefChecklistTOC)] [TagLeaf (TagText "Checklist")]]) _ _ _) =
-  [(ChecklistTOCDAP, hrefChecklistTOC)]
-traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefLegendInfoTablesTOC)] [TagLeaf (TagText "Legend. Info & Tables")]]) _ _ _) =
-  [(LegendInfoTablesTOCDAP, hrefLegendInfoTablesTOC)]
-traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefAeroProcChartsTOC)] [TagLeaf (TagText "Aerodrome & Procedure Charts")]]) _ _ _) =
-  [(AeroProcChartsTOCDAP, hrefAeroProcChartsTOC)]
-traverseDAP' _ =
-  []
+newtype DAPEntries =
+  DAPEntries
+    [DAPEntry]
+  deriving (Eq, Ord, Show)
 
-traverseDAP2 ::
-  TagTreePos String
-  -> [(String, String, String)]
-traverseDAP2 (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-  [(href, date, amend)]
-traverseDAP2 _ =
-  []
+instance Semigroup DAPEntries where
+  DAPEntries x <> DAPEntries y =
+    DAPEntries (x <> y)
 
+instance Monoid DAPEntries where
+  mappend =
+    (<>)
+  mempty =
+    DAPEntries mempty
+
+data DAPDoc =
+  DAPDoc
+    DAPType
+      String -- url
+      DAPEntries
+  deriving (Eq, Ord, Show)
+
+newtype DAPDocs =
+  DAPDocs
+    [DAPDoc]
+  deriving (Eq, Ord, Show)
+
+instance Semigroup DAPDocs where
+  DAPDocs x <> DAPDocs y =
+    DAPDocs (x <> y)
+
+instance Monoid DAPDocs where
+  mappend =
+    (<>)
+  mempty =
+    DAPDocs mempty
+
+undefined = undefined
 
 runDAP ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic [((DAPType, String), [(String, String, String)])] ersa)
+  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic DAPDocs ersa)
 runDAP (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runDAP (Aip_Charts u t x) =
@@ -492,21 +502,31 @@ runDAP (Aip_SUP_AIC u x) =
 runDAP (Aip_Summary_SUP_AIC u x) =
   pure (Aip_Summary_SUP_AIC u x)
 runDAP (Aip_DAP u t _) =
-  let qq :: ExceptT ConnErrorHttp4xx IO [((DAPType, String), [(String, String, String)])]
-      qq =
-        do  g <- doRequest (aipRequestGet u "") :: ExceptT ConnErrorHttp4xx IO String
-            let p :: [(DAPType, String)]; p = foldMap (traverseTree traverseDAP' . fromTagTree) (parseTree g)
-            let hh :: String -> ExceptT ConnErrorHttp4xx IO [(String, String, String)]
-                hh uu =
-                  do  k <- doRequest (aipRequestGet uu "")
-                      let oo = foldMap (traverseTree traverseDAP2 . fromTagTree) (parseTree k)
-                      pure oo
-            let e :: (DAPType, String) -> ExceptT ConnErrorHttp4xx IO ((DAPType, String), [(String, String, String)])
-                e z@(_, u') =
-                  (\x -> (z, x)) <$> hh u'
-            mapM e p
-  in  do  s <- qq
-          pure (Aip_DAP u t s)
+  let eachDAP :: ExceptT ConnErrorHttp4xx IO DAPDocs
+      eachDAP =
+        let traverseDAP2' ::
+              TagTreePos String
+              -> DAPEntries
+            traverseDAP2' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
+              DAPEntries [DAPEntry href date amend]
+            traverseDAP2' _ =
+              mempty
+            traverseDAP' ::
+              TagTreePos String
+              -> [(DAPType, String)]
+            traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefSpecNotManTOC)] [TagLeaf (TagText "Special Notices & Manuscript")]]) _ _ _) =
+              [(SpecNotManTOCDAP, hrefSpecNotManTOC)]
+            traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefChecklistTOC)] [TagLeaf (TagText "Checklist")]]) _ _ _) =
+              [(ChecklistTOCDAP, hrefChecklistTOC)]
+            traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefLegendInfoTablesTOC)] [TagLeaf (TagText "Legend. Info & Tables")]]) _ _ _) =
+              [(LegendInfoTablesTOCDAP, hrefLegendInfoTablesTOC)]
+            traverseDAP' (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefAeroProcChartsTOC)] [TagLeaf (TagText "Aerodrome & Procedure Charts")]]) _ _ _) =
+              [(AeroProcChartsTOCDAP, hrefAeroProcChartsTOC)]
+            traverseDAP' _ =
+              []
+        in  do  dap1 <- traverseAipHtmlRequestGet traverseDAP' u
+                DAPDocs <$> mapM (\(d, u') -> DAPDoc d u' <$> traverseAipHtmlRequestGet traverseDAP2' u') dap1
+  in  Aip_DAP u t <$> eachDAP
 runDAP (Aip_DAH u x) =
   pure (Aip_DAH u x)
 runDAP (Aip_ERSA u t x) =
@@ -554,14 +574,11 @@ runERSA (Aip_ERSA u t _) =
 runERSA (Aip_AandB_Charts x) =
   pure (Aip_AandB_Charts x)
 
-{-
 runAipDocument ::
   AipDocument book charts sup_aic dap ersa
   -> ExceptT ConnErrorHttp4xx IO AipDocument2
--}
 runAipDocument =
-  -- runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
-  runDAP
+  runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
   
 
 
