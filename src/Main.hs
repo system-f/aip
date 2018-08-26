@@ -17,7 +17,6 @@ main =
 
 {- todo
 
-* newtype Href = Href String
 * trim spaces from tags
 * fix some relative hrefs in tags
 * library support

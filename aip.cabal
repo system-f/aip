@@ -81,6 +81,7 @@ library
                     Data.Aviation.Aip.Ersa
                     Data.Aviation.Aip.ErsaAerodrome
                     Data.Aviation.Aip.ErsaAerodromes
+                    Data.Aviation.Aip.Href
                     Data.Aviation.Aip.HttpRequest
                     Data.Aviation.Aip.ListItemLink
                     Data.Aviation.Aip.ListItemLinks

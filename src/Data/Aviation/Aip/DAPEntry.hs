@@ -6,11 +6,12 @@ module Data.Aviation.Aip.DAPEntry(
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
+import Data.Aviation.Aip.Href(Href)
 import Papa hiding ((.=))
 
 data DAPEntry =
   DAPEntry
-    String -- href
+    Href -- href
     String -- text
     String -- date
     String -- amend

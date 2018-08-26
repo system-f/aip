@@ -5,14 +5,15 @@ module Data.Aviation.Aip.ErsaAerodrome(
   ErsaAerodrome(..)
 ) where
 
+import Data.Aviation.Aip.Href(Href)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Papa hiding ((.=))
 
 data ErsaAerodrome =
   ErsaAerodrome
     String
-    String
-    (Maybe String)
+    Href
+    (Maybe Href)
   deriving (Eq, Ord, Show)
 
 instance FromJSON ErsaAerodrome where

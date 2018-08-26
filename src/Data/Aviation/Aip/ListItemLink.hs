@@ -6,12 +6,13 @@ module Data.Aviation.Aip.ListItemLink(
 , ManyListItemLink(..)
 ) where
 
+import Data.Aviation.Aip.Href(Href)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Papa hiding ((.=))
 
 data ListItemLink =
   ListItemLink
-    String
+    Href
     String
   deriving (Eq, Ord, Show)
 

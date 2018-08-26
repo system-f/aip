@@ -24,6 +24,7 @@ import Data.Aviation.Aip.DAPEntry(DAPEntry(DAPEntry))
 import Data.Aviation.Aip.DAPDoc(DAPDoc(DAPDoc))
 import Data.Aviation.Aip.DAPDocs(DAPDocs(DAPDocs))
 import Data.Aviation.Aip.Ersa(Ersa(Ersa))
+import Data.Aviation.Aip.Href(Href(Href))
 import Data.Aviation.Aip.HttpRequest(doGetRequest)
 import Data.Aviation.Aip.ListItemLink(ListItemLink(ListItemLink))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks(ListItemLinks))
@@ -125,7 +126,7 @@ runCharts (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runCharts (Aip_Charts u t _) =
   do  i <- traverseAipHtmlRequestGet (traverseListItems (const True)) u
-      p <- traverse (\l@(ListItemLink u' _) ->
+      p <- traverse (\l@(ListItemLink (Href u') _) ->
               do  n <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u'
                   pure (l :| n ^. _Wrapped)) (i ^. _Wrapped)
       pure (Aip_Charts u t (ListItemLinks1 p))
@@ -154,7 +155,7 @@ runSUP_AIC (Aip_SUP_AIC u _) =
         TagTreePos String
         -> Aip_SUP_and_AICs
       traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
-        Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum href title pubdate effdate]
+        Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum (Href href) title pubdate effdate]
       traverseAip_SUP_AIC _ =
         mempty
   in  Aip_SUP_AIC u <$> traverseAipHtmlRequestGet traverseAip_SUP_AIC u
@@ -203,7 +204,7 @@ runDAP (Aip_DAP u t _) =
               TagTreePos String
               -> DAPEntries
             traverseDAP2 (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry href tx date amend]
+              DAPEntries [DAPEntry (Href href) tx date amend]
             traverseDAP2 _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
@@ -219,7 +220,7 @@ runDAP (Aip_DAP u t _) =
                       -> AipConn [DAPDoc]
                     ts (t', u') =
                       let noaerodrome dt =
-                            (\x -> [DAPDoc dt u' x]) <$> traverseAipHtmlRequestGet traverseDAP2 u'
+                            (\x -> [DAPDoc dt (Href u') x]) <$> traverseAipHtmlRequestGet traverseDAP2 u'
                       in  case t' of
                             SpecNotManTOCDAP ->
                               noaerodrome SpecNotManTOCDAP
@@ -239,7 +240,7 @@ runDAP (Aip_DAP u t _) =
                                       docs =
                                         parseTree f >>= \x ->
                                         es x >>= \(s', e') ->
-                                        pure (DAPDoc (AeroProcChartsTOCDAP s') u' e')
+                                        pure (DAPDoc (AeroProcChartsTOCDAP s') (Href u') e')
                                   pure docs
                 DAPDocs . concat <$> mapM ts dap1
   in  Aip_DAP u t <$> eachDAP
@@ -273,10 +274,10 @@ runERSA (Aip_ERSA u t _) =
         ErsaAerodromes [
           ErsaAerodrome
             aerodrome
-            fac_href $
+            (Href fac_href) $
             case r of
               TagLeaf (TagText _) : TagBranch "td" _ [TagLeaf (TagText _), TagBranch "a" [("href", rds_href)] [TagLeaf (TagText "RDS")], TagLeaf (TagText _)] : _ : _ ->
-                Just rds_href
+                Just (Href rds_href)
               _ ->
                 Nothing]
       traverseErsaAerodromes _ =
@@ -304,7 +305,7 @@ traverseListItems p (TagTreePos (TagBranch "ul" [] x) _ _ _) =
   let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
         if p href
           then
-            [ListItemLink href tx]
+            [ListItemLink (Href href) tx]
           else
             []
       li _ =

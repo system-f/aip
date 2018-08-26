@@ -8,12 +8,13 @@ module Data.Aviation.Aip.DAPDoc(
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.DAPType(DAPType)
 import Data.Aviation.Aip.DAPEntries(DAPEntries)
+import Data.Aviation.Aip.Href(Href)
 import Papa hiding ((.=))
 
 data DAPDoc =
   DAPDoc
     (DAPType String)
-    String -- url
+    Href
     DAPEntries
   deriving (Eq, Ord, Show)
 

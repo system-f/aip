@@ -19,6 +19,7 @@ import Data.Aviation.Aip.HttpRequest as A
 import Data.Aviation.Aip.Ersa as A
 import Data.Aviation.Aip.ErsaAerodrome as A
 import Data.Aviation.Aip.ErsaAerodromes as A
+import Data.Aviation.Aip.Href as A
 import Data.Aviation.Aip.ListItemLink as A
 import Data.Aviation.Aip.ListItemLinks as A
 import Data.Aviation.Aip.ListItemLinks1 as A
