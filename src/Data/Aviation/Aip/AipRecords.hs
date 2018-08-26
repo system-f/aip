@@ -17,6 +17,7 @@ import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
+import Data.Aviation.Aip.Href (Href(Href))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex)
 import Control.Monad.IO.Class(liftIO)
@@ -91,24 +92,24 @@ getAipRecords cch dir =
                     -> AipDocuments1
                   traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
                     let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
-                          [Aip_Book href tx ()]
+                          [Aip_Book (Href href) tx ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
-                          [Aip_Charts href tx ()]
+                          [Aip_Charts (Href href) tx ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
-                          [Aip_SUP_AIC href ()]
+                          [Aip_SUP_AIC (Href href) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAP href tx ()]
+                          [Aip_DAP (Href href) tx ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAH href tx]
+                          [Aip_DAH (Href href) tx]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
-                          [Aip_ERSA href tx ()]
+                          [Aip_ERSA (Href href) tx ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
-                          [Aip_AandB_Charts href]
+                          [Aip_AandB_Charts (Href href)]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
                           let str = "Summary of SUP/AIC Current"
                               (p, s) = splitAt (length str) tx
                           in  if p == str then
-                                [Aip_Summary_SUP_AIC href s]
+                                [Aip_Summary_SUP_AIC (Href href) s]
                               else
                                 [] 
                         li _ =

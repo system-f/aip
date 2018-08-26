@@ -12,6 +12,7 @@ module Data.Aviation.Aip.HttpRequest(
   
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
+import Data.Aviation.Aip.Href(Href(Href))
 import Network.HTTP(HStream, Request, RequestMethod(GET, POST), mkRequest, setRequestBody, simpleHTTP, rspCode, rspBody)
 import Network.BufferType(BufferType)
 import Network.URI(URI(URI), URIAuth(URIAuth))
@@ -19,7 +20,7 @@ import Papa
 
 aipRequestGet ::
   BufferType ty =>
-  String
+  Href
   -> String
   -> Request ty
 aipRequestGet =
@@ -27,7 +28,7 @@ aipRequestGet =
 
 aipRequestPost ::
   BufferType ty =>
-  String
+  Href
   -> String
   -> Request ty
 aipRequestPost =
@@ -36,10 +37,10 @@ aipRequestPost =
 aipRequestMethod ::
   BufferType ty =>
   RequestMethod
-  -> String
+  -> Href
   -> String
   -> Request ty
-aipRequestMethod m s z =
+aipRequestMethod m (Href s) z =
   mkRequest m (URI "http:" (Just (URIAuth "" "www.airservicesaustralia.com" "")) ("/aip/" ++ s) z "")
 
 doRequest ::
@@ -62,7 +63,7 @@ doRequest r =
 
 doGetRequest ::
   HStream a =>
-  String
+  Href
   -> String
   -> ExceptT ConnErrorHttp4xx IO a
 doGetRequest s z =
@@ -70,7 +71,7 @@ doGetRequest s z =
 
 doPostRequest ::
   HStream a =>
-  String
+  Href
   -> String
   -> ExceptT ConnErrorHttp4xx IO a
 doPostRequest s z =
@@ -80,6 +81,6 @@ requestAipContents ::
   ExceptT ConnErrorHttp4xx IO String
 requestAipContents =
   let r = setRequestBody
-            (aipRequestPost "aip.asp" "?pg=10")
+            (aipRequestPost (Href "aip.asp") "?pg=10")
             ("application/x-www-form-urlencoded", "Submit=I+Agree&check=1")
   in  doRequest r

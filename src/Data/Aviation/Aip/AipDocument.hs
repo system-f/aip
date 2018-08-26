@@ -41,14 +41,14 @@ import Text.StringLike(StringLike)
 
 
 data AipDocument book charts sup_aic dap ersa =
-  Aip_Book String String book
-  | Aip_Charts String String charts
-  | Aip_SUP_AIC String sup_aic
-  | Aip_Summary_SUP_AIC String String
-  | Aip_DAP String String dap
-  | Aip_DAH String String
-  | Aip_ERSA String String ersa
-  | Aip_AandB_Charts String
+  Aip_Book Href String book
+  | Aip_Charts Href String charts
+  | Aip_SUP_AIC Href sup_aic
+  | Aip_Summary_SUP_AIC Href String
+  | Aip_DAP Href String dap
+  | Aip_DAH Href String
+  | Aip_ERSA Href String ersa
+  | Aip_AandB_Charts Href
   deriving (Eq, Ord, Show)
 
 type AipDocument1 =
@@ -126,7 +126,7 @@ runCharts (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runCharts (Aip_Charts u t _) =
   do  i <- traverseAipHtmlRequestGet (traverseListItems (const True)) u
-      p <- traverse (\l@(ListItemLink (Href u') _) ->
+      p <- traverse (\l@(ListItemLink u' _) ->
               do  n <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u'
                   pure (l :| n ^. _Wrapped)) (i ^. _Wrapped)
       pure (Aip_Charts u t (ListItemLinks1 p))
@@ -187,17 +187,17 @@ runDAP (Aip_DAP u t _) =
       eachDAP =
         let traverseDAP ::
               TagTreePos String
-              -> [(DAPType', String)]
+              -> [(DAPType', Href)]
             traverseDAP (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefSpecNotManTOC)] [TagLeaf (TagText "Special Notices & Manuscript")]]) _ _ _) =
-              [(SpecNotManTOCDAP, hrefSpecNotManTOC)]
+              [(SpecNotManTOCDAP, Href hrefSpecNotManTOC)]
             traverseDAP (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefChecklistTOC)] [TagLeaf (TagText "Checklist")]]) _ _ _) =
-              [(ChecklistTOCDAP, hrefChecklistTOC)]
+              [(ChecklistTOCDAP, Href hrefChecklistTOC)]
               
             traverseDAP (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefLegendInfoTablesTOC)] [TagLeaf (TagText "Legend. Info & Tables")]]) _ _ _) =
-              [(LegendInfoTablesTOCDAP, hrefLegendInfoTablesTOC)]
+              [(LegendInfoTablesTOCDAP, Href hrefLegendInfoTablesTOC)]
               
             traverseDAP (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefAeroProcChartsTOC)] [TagLeaf (TagText "Aerodrome & Procedure Charts")]]) _ _ _) =
-              [(AeroProcChartsTOCDAP (), hrefAeroProcChartsTOC)]
+              [(AeroProcChartsTOCDAP (), Href hrefAeroProcChartsTOC)]
             traverseDAP _ =
               []
             traverseDAP2 ::
@@ -216,11 +216,11 @@ runDAP (Aip_DAP u t _) =
               mempty
         in  do  dap1 <- traverseAipHtmlRequestGet traverseDAP u
                 let ts ::
-                      (DAPType', String)
+                      (DAPType', Href)
                       -> AipConn [DAPDoc]
                     ts (t', u') =
                       let noaerodrome dt =
-                            (\x -> [DAPDoc dt (Href u') x]) <$> traverseAipHtmlRequestGet traverseDAP2 u'
+                            (\x -> [DAPDoc dt u' x]) <$> traverseAipHtmlRequestGet traverseDAP2 u'
                       in  case t' of
                             SpecNotManTOCDAP ->
                               noaerodrome SpecNotManTOCDAP
@@ -240,7 +240,7 @@ runDAP (Aip_DAP u t _) =
                                       docs =
                                         parseTree f >>= \x ->
                                         es x >>= \(s', e') ->
-                                        pure (DAPDoc (AeroProcChartsTOCDAP s') (Href u') e')
+                                        pure (DAPDoc (AeroProcChartsTOCDAP s') u' e')
                                   pure docs
                 DAPDocs . concat <$> mapM ts dap1
   in  Aip_DAP u t <$> eachDAP
@@ -317,7 +317,7 @@ traverseListItems _ _ =
 traverseAipHtmlRequestGet ::
   (HStream str, Monoid a, Text.StringLike.StringLike str) =>
   (TagTreePos str -> a)
-  -> String
+  -> Href
   -> AipConn a
-traverseAipHtmlRequestGet k u =
-  foldMap (traverseTree k . fromTagTree) . parseTree <$> doGetRequest u ""
+traverseAipHtmlRequestGet k (Href u) =
+  foldMap (traverseTree k . fromTagTree) . parseTree <$> doGetRequest (Href u) ""
