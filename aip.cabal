@@ -43,6 +43,7 @@ library
                     , directory >= 1.3 && < 1.4
                     , lens >= 4 && < 5
                     , papa >= 0.3 && < 0.4
+                    , time >= 1.6 && < 1.9
                     , utf8-string
                     , Crypto
                     , aeson
@@ -62,18 +63,26 @@ library
 
   exposed-modules:
                     Data.Aviation.Aip
-                    Data.Aviation.Aip.AipDate
+                    Data.Aviation.Aip.Aip_SUP_and_AIC
+                    Data.Aviation.Aip.Aip_SUP_and_AICs
                     Data.Aviation.Aip.AipDocument
                     Data.Aviation.Aip.AipDocuments
-                    Data.Aviation.Aip.AipHref
-                    Data.Aviation.Aip.AipPg
+                    Data.Aviation.Aip.AipRecord
+                    Data.Aviation.Aip.AipRecords
                     Data.Aviation.Aip.ConnErrorHttp4xx
-                    Data.Aviation.Aip.Day
+                    Data.Aviation.Aip.DAPDoc
+                    Data.Aviation.Aip.DAPDocs
+                    Data.Aviation.Aip.DAPEntries
+                    Data.Aviation.Aip.DAPEntry
+                    Data.Aviation.Aip.DAPType
                     Data.Aviation.Aip.Ersa
-                    Data.Aviation.Aip.Ersas
+                    Data.Aviation.Aip.ErsaAerodrome
+                    Data.Aviation.Aip.ErsaAerodromes
                     Data.Aviation.Aip.HttpRequest
-                    Data.Aviation.Aip.Month
-                    Data.Aviation.Aip.Year
+                    Data.Aviation.Aip.ListItemLink
+                    Data.Aviation.Aip.ListItemLinks
+                    Data.Aviation.Aip.ListItemLinks1
+                    Data.Aviation.Aip.SHA1
 
 
 executable          aip

@@ -5,6 +5,8 @@ module Data.Aviation.Aip.HttpRequest(
 , aipRequestPost
 , aipRequestMethod
 , doRequest
+, doGetRequest
+, doPostRequest
 , requestAipContents
 ) where
   
@@ -57,6 +59,22 @@ doRequest r =
                     Left (Http4xx r2 r3)
                   else
                     Right (rspBody c)
+
+doGetRequest ::
+  HStream a =>
+  String
+  -> String
+  -> ExceptT ConnErrorHttp4xx IO a
+doGetRequest s z =
+  doRequest (aipRequestGet s z)
+
+doPostRequest ::
+  HStream a =>
+  String
+  -> String
+  -> ExceptT ConnErrorHttp4xx IO a
+doPostRequest s z =
+  doRequest (aipRequestPost s z)
 
 requestAipContents ::
   ExceptT ConnErrorHttp4xx IO String
