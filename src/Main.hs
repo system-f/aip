@@ -55,17 +55,23 @@ traverseAipHtmlRequestGet ::
 traverseAipHtmlRequestGet k u =
   foldMap (traverseTree k . fromTagTree) . parseTree <$> doGetRequest u ""
 
+data Cache =
+  UseCache
+  | NoCache
+  deriving (Eq, Ord, Show)
+
 runX ::
-  FilePath -- basedir
+  Cache
+  -> FilePath -- basedir
   -> ExceptT ConnErrorHttp4xx IO AipRecord
-runX dir =
+runX cch dir =
   let aiprecords' =
         dir </> aiprecords
   in  do  c <-  requestAipContents
           let s = SHA1 (hash (Codec.Binary.UTF8.String.encode c))
           e <-  liftIO (doesFileExist aiprecords')
           x <-  liftIO $
-                  if e
+                  if e && cch == UseCache
                     then
                       decodeFileStrict aiprecords' :: IO (Maybe (AipRecords))
                     else
@@ -314,6 +320,5 @@ runAipDocument =
 main ::
   IO ()
 main =
-  do  sequence_ [createDirectoryIfMissing True "/tmp/abc", writeFile ("/tmp/abc" </> aiprecords) "", removeFile ("/tmp/abc" </> aiprecords)] -- stop cache
-      x <- runExceptT $ runX "/tmp/abc"
+  do  x <- runExceptT $ runX UseCache "/tmp/abc"
       print x
