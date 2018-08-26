@@ -19,16 +19,11 @@ import Text.HTML.TagSoup.Tree
 import Text.HTML.TagSoup.Tree.Zipper
 import Codec.Binary.UTF8.String
 import Data.Aeson
-import Data.Digest.SHA1
+import Data.Aeson.Encode.Pretty
 import Network.TCP
 import Text.StringLike(StringLike)
-
+import qualified Data.ByteString.Lazy as LazyByteString
 import Data.Aviation.Aip
-
-aiprecords ::
-  FilePath
-aiprecords =
-  "aip-records.json"
 
 traverseListItems ::
   (String -> Bool)
@@ -51,42 +46,134 @@ traverseAipHtmlRequestGet ::
   (HStream str, Monoid a, Text.StringLike.StringLike str) =>
   (TagTreePos str -> a)
   -> String
-  -> ExceptT ConnErrorHttp4xx IO a
+  -> AipConn a
 traverseAipHtmlRequestGet k u =
   foldMap (traverseTree k . fromTagTree) . parseTree <$> doGetRequest u ""
 
 data Cache =
-  UseCache
+  ReadCache
+  | ReadWriteCache
   | NoCache
   deriving (Eq, Ord, Show)
+
+class AsReadCache a where
+  _ReadCache ::
+    Prism'
+      a
+      ()
+      
+instance AsReadCache () where
+  _ReadCache =
+    id
+
+instance AsReadCache Cache where
+  _ReadCache =
+    prism'
+      (\() -> ReadCache)
+      (\c -> case c of
+                ReadCache ->
+                  Just ()
+                _ ->
+                  Nothing)
+
+class AsReadWriteCache a where
+  _ReadWriteCache ::
+    Prism'
+      a
+      ()
+      
+instance AsReadWriteCache () where
+  _ReadWriteCache =
+    id
+
+instance AsReadWriteCache Cache where
+  _ReadWriteCache =
+    prism'
+      (\() -> ReadWriteCache)
+      (\c -> case c of
+                ReadWriteCache ->
+                  Just ()
+                _ ->
+                  Nothing)
+
+class AsNoCache a where
+  _NoCache ::
+    Prism'
+      a
+      ()
+      
+instance AsNoCache () where
+  _NoCache =
+    id
+
+instance AsNoCache Cache where
+  _NoCache =
+    prism'
+      (\() -> NoCache)
+      (\c -> case c of
+                NoCache ->
+                  Just ()
+                _ ->
+                  Nothing)
+
+isReadOrWriteCache ::
+  (AsReadCache t, AsReadWriteCache t) =>
+  t
+  -> Bool
+isReadOrWriteCache x =
+  any (\p' -> not (isn't p' x)) [_ReadCache, _ReadWriteCache]
+
+isWriteCache ::
+  AsReadWriteCache t =>
+  t
+  -> Bool
+isWriteCache x =
+  not (isn't _ReadWriteCache x)
 
 runX ::
   Cache
   -> FilePath -- basedir
-  -> ExceptT ConnErrorHttp4xx IO AipRecord
+  -> AipConn AipRecords
 runX cch dir =
-  let aiprecords' =
-        dir </> aiprecords
-  in  do  c <-  requestAipContents
-          let s = SHA1 (hash (Codec.Binary.UTF8.String.encode c))
-          e <-  liftIO (doesFileExist aiprecords')
-          x <-  liftIO $
-                  if e && cch == UseCache
-                    then
-                      decodeFileStrict aiprecords' :: IO (Maybe (AipRecords))
-                    else
-                      pure Nothing
-          let w = x >>= findOf _ManyAipRecord (\(AipRecord h _ _) -> h == s)
-          case w of
-            Nothing ->
-              do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
-                  tr2 <- AipDocuments <$> traverse runAipDocument a
-                  t <- liftIO getCurrentTime
-                  let r = AipRecord s t tr2
-                  liftIO $ encodeFile aiprecords' (r `cons` fromMaybe mempty x)
-                  pure r
+  let readCache ::
+        FilePath
+        -> IO (Maybe AipRecords)
+      readCache c =
+        if isReadOrWriteCache cch
+          then
+            do  e <- doesFileExist c
+                if e
+                  then
+                    do  p <- getPermissions c
+                        if readable p
+                          then
+                            decodeFileStrict c :: IO (Maybe (AipRecords))
+                          else
+                            pure Nothing
+                  else
+                    pure Nothing
+          else
+            pure Nothing
+
+      writeCache z rs =
+        when (isWriteCache cch) $
+          do  createDirectoryIfMissing True (takeDirectory z)
+              let conf = defConfig { confIndent = Spaces 2 }
+              LazyByteString.writeFile z (encodePretty' conf rs)
+  in  do  c <- requestAipContents
+          let h = hash (Codec.Binary.UTF8.String.encode c)
+          let z = dir </> hashHex h ".json"
+          r <- liftIO $ readCache z
+          case r of
             Just v ->
               pure v
+            Nothing ->
+              do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
+                  q <- AipDocuments <$> traverse runAipDocument a
+                  t <- liftIO getCurrentTime
+                  let rs = AipRecords h (AipRecord t q :| [])
+                  liftIO $ writeCache z rs
+                  pure rs
 
 traverseAipDocuments ::
   TagTreePos String
@@ -121,7 +208,7 @@ traverseAipDocuments _ =
 
 runBook ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument ListItemLinks charts sup_aic dap ersa)
+  -> AipConn (AipDocument ListItemLinks charts sup_aic dap ersa)
 runBook (Aip_Book u t _) =
   Aip_Book u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u
 runBook (Aip_Charts u t x) =
@@ -141,7 +228,7 @@ runBook (Aip_AandB_Charts x) =
 
 runCharts ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument book ListItemLinks1 sup_aic dap ersa)
+  -> AipConn (AipDocument book ListItemLinks1 sup_aic dap ersa)
 runCharts (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runCharts (Aip_Charts u t _) =
@@ -165,7 +252,7 @@ runCharts (Aip_AandB_Charts x) =
 
 runSUP_AIC ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts Aip_SUP_and_AICs dap ersa)
+  -> AipConn (AipDocument book charts Aip_SUP_and_AICs dap ersa)
 runSUP_AIC (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runSUP_AIC (Aip_Charts u t x) =
@@ -192,7 +279,7 @@ runSUP_AIC (Aip_AandB_Charts x) =
 
 runDAP ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic DAPDocs ersa)
+  -> AipConn (AipDocument book charts sup_aic DAPDocs ersa)
 runDAP (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runDAP (Aip_Charts u t x) =
@@ -203,7 +290,7 @@ runDAP (Aip_Summary_SUP_AIC u x) =
   pure (Aip_Summary_SUP_AIC u x)
 runDAP (Aip_DAP u t _) =
   let eachDAP ::
-        ExceptT ConnErrorHttp4xx IO DAPDocs
+        AipConn DAPDocs
       eachDAP =
         let traverseDAP ::
               TagTreePos String
@@ -237,7 +324,7 @@ runDAP (Aip_DAP u t _) =
         in  do  dap1 <- traverseAipHtmlRequestGet traverseDAP u
                 let ts ::
                       (DAPType', String)
-                      -> ExceptT ConnErrorHttp4xx IO [DAPDoc]
+                      -> AipConn [DAPDoc]
                     ts (t', u') =
                       let noaerodrome dt =
                             (\x -> [DAPDoc dt u' x]) <$> traverseAipHtmlRequestGet traverseDAP2 u'
@@ -249,7 +336,7 @@ runDAP (Aip_DAP u t _) =
                             LegendInfoTablesTOCDAP ->
                               noaerodrome LegendInfoTablesTOCDAP
                             AeroProcChartsTOCDAP () ->
-                              do  f <- doRequest (aipRequestGet u' "") :: ExceptT ConnErrorHttp4xx IO String
+                              do  f <- doRequest (aipRequestGet u' "")
                                   let es ::
                                         TagTree String
                                         -> [(String, DAPEntries)]
@@ -273,7 +360,7 @@ runDAP (Aip_AandB_Charts x) =
 
 runERSA ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO (AipDocument book charts sup_aic dap Ersa)
+  -> AipConn (AipDocument book charts sup_aic dap Ersa)
 runERSA (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runERSA (Aip_Charts u t x) =
@@ -313,12 +400,12 @@ runERSA (Aip_AandB_Charts x) =
 
 runAipDocument ::
   AipDocument book charts sup_aic dap ersa
-  -> ExceptT ConnErrorHttp4xx IO AipDocument2
+  -> AipConn AipDocument2
 runAipDocument =
   runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
 
 main ::
   IO ()
 main =
-  do  x <- runExceptT $ runX UseCache "/tmp/abc"
+  do  x <- runExceptT $ runX ReadWriteCache "/tmp/abc"
       print x

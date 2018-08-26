@@ -13,13 +13,11 @@ import Data.Aviation.Aip.DAPDocs(DAPDocs)
 import Data.Aviation.Aip.Ersa(Ersa)
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
 import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1)
-import Data.Aviation.Aip.SHA1(SHA1)
 import Data.Time(UTCTime)
 import Papa hiding ((.=))
 
 data AipRecord =
   AipRecord
-    SHA1
     UTCTime
     (AipDocuments ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa)
   deriving (Eq, Show)
@@ -28,13 +26,12 @@ instance FromJSON AipRecord where
   parseJSON =
     withObject "AipRecord" $ \v ->
       AipRecord <$>
-        v .: "sha1" <*>
         v .: "utc" <*>
         v .: "documents"
 
 instance ToJSON AipRecord where
-  toJSON (AipRecord s t p) =
-    object ["sha1" .= s, "utc" .= t, "documents" .= p]
+  toJSON (AipRecord t p) =
+    object ["utc" .= t, "documents" .= p]
 
 class ManyAipRecord a where
   _ManyAipRecord ::

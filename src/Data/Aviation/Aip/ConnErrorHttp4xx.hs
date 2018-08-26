@@ -4,8 +4,10 @@
 
 module Data.Aviation.Aip.ConnErrorHttp4xx(
   ConnErrorHttp4xx(..)
+, AipConn
 ) where
 
+import Control.Monad.Trans.Except(ExceptT)
 import Network.Stream(ConnError)
 import Papa
 
@@ -14,4 +16,5 @@ data ConnErrorHttp4xx =
   | Http4xx Int Int
   deriving (Eq, Show)
 
-makeClassyPrisms ''ConnErrorHttp4xx
+type AipConn a =
+  ExceptT ConnErrorHttp4xx IO a

@@ -50,7 +50,9 @@ library
                     , vector
                     , unordered-containers
                     , text
-                    
+                    , iso8601-time
+                    , aeson-pretty
+
   ghc-options:
                     -Wall
 
@@ -117,7 +119,9 @@ executable          aip
                     , vector
                     , unordered-containers
                     , text
-
+                    , iso8601-time
+                    , aeson-pretty
+                    
   ghc-options:
                     -Wall
 
