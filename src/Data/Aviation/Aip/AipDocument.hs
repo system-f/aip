@@ -24,7 +24,7 @@ import Data.Aviation.Aip.DAPEntry(DAPEntry(DAPEntry))
 import Data.Aviation.Aip.DAPDoc(DAPDoc(DAPDoc))
 import Data.Aviation.Aip.DAPDocs(DAPDocs(DAPDocs))
 import Data.Aviation.Aip.Ersa(Ersa(Ersa))
-import Data.Aviation.Aip.Href(Href(Href))
+import Data.Aviation.Aip.Href(Href(Href), dropHrefFile)
 import Data.Aviation.Aip.HttpRequest(doGetRequest)
 import Data.Aviation.Aip.ListItemLink(ListItemLink(ListItemLink))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks(ListItemLinks))
@@ -201,18 +201,20 @@ runDAP (Aip_DAP u t _) =
             traverseDAP _ =
               []
             traverseDAP2 ::
-              TagTreePos String
+              Href
+              -> TagTreePos String
               -> DAPEntries
-            traverseDAP2 (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (Href href) tx date amend]
-            traverseDAP2 _ =
+            traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
+              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) tx date amend]
+            traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
-              TagTreePos String
+              Href
+              -> TagTreePos String
               -> [(String, DAPEntries)]
-            traverseAeroProcChartsTOCDAP (TagTreePos (TagBranch "h3" _ [TagLeaf (TagText aerodrome)]) _ (TagLeaf (TagText _) : TagBranch "table" _ es : _) _) =
-              [(aerodrome, _Wrapped # (fromTagTree <$> es >>= (^. _Wrapped) . traverseTree traverseDAP2))]
-            traverseAeroProcChartsTOCDAP _ =
+            traverseAeroProcChartsTOCDAP u' (TagTreePos (TagBranch "h3" _ [TagLeaf (TagText aerodrome)]) _ (TagLeaf (TagText _) : TagBranch "table" _ es : _) _) =
+              [(aerodrome, _Wrapped # (fromTagTree <$> es >>= (^. _Wrapped) . traverseTree (traverseDAP2 u')))]
+            traverseAeroProcChartsTOCDAP _ _ =
               mempty
         in  do  dap1 <- traverseAipHtmlRequestGet traverseDAP u
                 let ts ::
@@ -220,7 +222,7 @@ runDAP (Aip_DAP u t _) =
                       -> AipConn [DAPDoc]
                     ts (t', u') =
                       let noaerodrome dt =
-                            (\x -> [DAPDoc dt u' x]) <$> traverseAipHtmlRequestGet traverseDAP2 u'
+                            (\x -> [DAPDoc dt u' x]) <$> traverseAipHtmlRequestGet (traverseDAP2 u') u'
                       in  case t' of
                             SpecNotManTOCDAP ->
                               noaerodrome SpecNotManTOCDAP
@@ -234,7 +236,7 @@ runDAP (Aip_DAP u t _) =
                                         TagTree String
                                         -> [(String, DAPEntries)]
                                       es =
-                                        traverseTree traverseAeroProcChartsTOCDAP . fromTagTree
+                                        traverseTree (traverseAeroProcChartsTOCDAP u') . fromTagTree
                                       docs ::
                                         [DAPDoc]
                                       docs =

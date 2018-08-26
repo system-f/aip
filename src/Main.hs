@@ -18,7 +18,6 @@ main =
 {- todo
 
 * trim spaces from tags
-* fix some relative hrefs in tags
 * library support
   * lens
   * Plated
