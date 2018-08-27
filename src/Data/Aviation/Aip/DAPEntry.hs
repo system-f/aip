@@ -7,12 +7,13 @@ module Data.Aviation.Aip.DAPEntry(
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Txt(Txt)
 import Papa hiding ((.=))
 
 data DAPEntry =
   DAPEntry
-    Href -- href
-    String -- text
+    Href
+    Txt
     String -- date
     String -- amend
   deriving (Eq, Ord, Show)
@@ -22,10 +23,10 @@ instance FromJSON DAPEntry where
     withObject "DAPEntry" $ \v ->
       DAPEntry <$>
         v .: "href" <*>
-        v .: "text" <*>
+        v .: "txt" <*>
         v .: "date" <*>
         v .: "amendment"
 
 instance ToJSON DAPEntry where
-  toJSON (DAPEntry href text date amendment) =
-    object ["href" .= href, "text" .= text, "date" .= date, "amendment" .= amendment]
+  toJSON (DAPEntry href txt date amendment) =
+    object ["href" .= href, "txt" .= txt, "date" .= date, "amendment" .= amendment]

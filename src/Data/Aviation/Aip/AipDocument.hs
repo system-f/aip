@@ -31,6 +31,7 @@ import Data.Aviation.Aip.ListItemLinks(ListItemLinks(ListItemLinks))
 import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1(ListItemLinks1))
 import Data.Aviation.Aip.ErsaAerodrome(ErsaAerodrome(ErsaAerodrome))
 import Data.Aviation.Aip.ErsaAerodromes(ErsaAerodromes(ErsaAerodromes))
+import Data.Aviation.Aip.Txt(Txt(Txt))
 import qualified Data.HashMap.Strict as HashMap(toList)
 import Network.TCP(HStream)
 import Papa hiding ((.=))
@@ -205,7 +206,7 @@ runDAP (Aip_DAP u t _) =
               -> TagTreePos String
               -> DAPEntries
             traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) tx date amend]
+              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) date amend]
             traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
@@ -307,7 +308,7 @@ traverseListItems p (TagTreePos (TagBranch "ul" [] x) _ _ _) =
   let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
         if p href
           then
-            [ListItemLink (Href href) tx]
+            [ListItemLink (Href href) (Txt tx)]
           else
             []
       li _ =

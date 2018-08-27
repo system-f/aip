@@ -7,13 +7,14 @@ module Data.Aviation.Aip.ListItemLink(
 ) where
 
 import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Txt(Txt)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Papa hiding ((.=))
 
 data ListItemLink =
   ListItemLink
     Href
-    String
+    Txt
   deriving (Eq, Ord, Show)
 
 class ManyListItemLink a where
@@ -29,8 +30,8 @@ instance FromJSON ListItemLink where
     withObject "ListItemLink" $ \v ->
       ListItemLink <$>
         v .: "href" <*>
-        v .: "text" 
+        v .: "txt" 
 
 instance ToJSON ListItemLink where
   toJSON (ListItemLink u t) =
-    object ["href" .= u, "text" .= t]
+    object ["href" .= u, "txt" .= t]
