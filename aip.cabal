@@ -87,6 +87,7 @@ library
                     Data.Aviation.Aip.ListItemLinks
                     Data.Aviation.Aip.ListItemLinks1
                     Data.Aviation.Aip.SHA1
+                    Data.Aviation.Aip.Txt
 
 
 executable          aip
