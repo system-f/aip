@@ -7,6 +7,7 @@ module Data.Aviation.Aip.DAPEntry(
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDate(AipDate)
+import Data.Aviation.Aip.Amendment(Amendment)
 import Data.Aviation.Aip.Href(Href)
 import Data.Aviation.Aip.Txt(Txt)
 import Papa hiding ((.=))
@@ -16,7 +17,7 @@ data DAPEntry =
     Href
     Txt
     AipDate
-    String -- amend
+    Amendment
   deriving (Eq, Ord, Show)
 
 instance FromJSON DAPEntry where

@@ -9,6 +9,7 @@ import Data.Aviation.Aip.AipDocument as A
 import Data.Aviation.Aip.AipDocuments as A
 import Data.Aviation.Aip.AipRecord as A
 import Data.Aviation.Aip.AipRecords as A
+import Data.Aviation.Aip.Amendment as A
 import Data.Aviation.Aip.Cache as A
 import Data.Aviation.Aip.ConnErrorHttp4xx as A
 import Data.Aviation.Aip.DAPDoc as A

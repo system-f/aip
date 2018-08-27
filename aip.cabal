@@ -72,6 +72,7 @@ library
                     Data.Aviation.Aip.AipDocuments
                     Data.Aviation.Aip.AipRecord
                     Data.Aviation.Aip.AipRecords
+                    Data.Aviation.Aip.Amendment
                     Data.Aviation.Aip.Cache
                     Data.Aviation.Aip.ConnErrorHttp4xx
                     Data.Aviation.Aip.DAPDoc

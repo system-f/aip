@@ -18,6 +18,7 @@ import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), Value(Object), object, (.
 import Data.Aviation.Aip.Aip_SUP_and_AIC(Aip_SUP_and_AIC(Aip_SUP_and_AIC))
 import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs(Aip_SUP_and_AICs))
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
+import Data.Aviation.Aip.Amendment(Amendment(Amendment))
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.DAPType(DAPType', DAPType(SpecNotManTOCDAP, ChecklistTOCDAP, LegendInfoTablesTOCDAP, AeroProcChartsTOCDAP))
 import Data.Aviation.Aip.DAPEntries(DAPEntries(DAPEntries))
@@ -207,7 +208,7 @@ runDAP (Aip_DAP u t _) =
               -> TagTreePos String
               -> DAPEntries
             traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) (AipDate date) amend]
+              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) (AipDate date) (Amendment amend)]
             traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
