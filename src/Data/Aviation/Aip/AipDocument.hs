@@ -46,13 +46,13 @@ import Text.StringLike(StringLike)
 
 
 data AipDocument book charts sup_aic dap ersa =
-  Aip_Book Href String book
-  | Aip_Charts Href String charts
+  Aip_Book Href Txt book
+  | Aip_Charts Href Txt charts
   | Aip_SUP_AIC Href sup_aic
   | Aip_Summary_SUP_AIC Href String
-  | Aip_DAP Href String dap
-  | Aip_DAH Href String
-  | Aip_ERSA Href String ersa
+  | Aip_DAP Href Txt dap
+  | Aip_DAH Href Txt
+  | Aip_ERSA Href Txt ersa
   | Aip_AandB_Charts Href
   deriving (Eq, Ord, Show)
 

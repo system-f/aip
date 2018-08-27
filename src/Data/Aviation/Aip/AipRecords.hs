@@ -20,6 +20,7 @@ import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.Href (Href(Href))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex)
+import Data.Aviation.Aip.Txt(Txt(Txt))
 import Control.Monad.IO.Class(liftIO)
 import Papa hiding ((.=))
 import System.Directory(doesFileExist, getPermissions, readable, createDirectoryIfMissing)
@@ -92,17 +93,17 @@ getAipRecords cch dir =
                     -> AipDocuments1
                   traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
                     let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
-                          [Aip_Book (Href href) tx ()]
+                          [Aip_Book (Href href) (Txt tx) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
-                          [Aip_Charts (Href href) tx ()]
+                          [Aip_Charts (Href href) (Txt tx) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
                           [Aip_SUP_AIC (Href href) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAP (Href href) tx ()]
+                          [Aip_DAP (Href href) (Txt tx) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAH (Href href) tx]
+                          [Aip_DAH (Href href) (Txt tx)]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
-                          [Aip_ERSA (Href href) tx ()]
+                          [Aip_ERSA (Href href) (Txt tx) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
                           [Aip_AandB_Charts (Href href)]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
