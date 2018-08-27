@@ -67,6 +67,7 @@ library
                     Data.Aviation.Aip
                     Data.Aviation.Aip.Aip_SUP_and_AIC
                     Data.Aviation.Aip.Aip_SUP_and_AICs
+                    Data.Aviation.Aip.AipDate
                     Data.Aviation.Aip.AipDocument
                     Data.Aviation.Aip.AipDocuments
                     Data.Aviation.Aip.AipRecord

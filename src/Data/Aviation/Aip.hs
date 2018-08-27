@@ -4,6 +4,7 @@ module Data.Aviation.Aip(
 
 import Data.Aviation.Aip.Aip_SUP_and_AIC as A
 import Data.Aviation.Aip.Aip_SUP_and_AICs as A
+import Data.Aviation.Aip.AipDate as A
 import Data.Aviation.Aip.AipDocument as A
 import Data.Aviation.Aip.AipDocuments as A
 import Data.Aviation.Aip.AipRecord as A
