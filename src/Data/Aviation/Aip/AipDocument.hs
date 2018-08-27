@@ -17,6 +17,7 @@ import Control.Monad(fail, (>=>))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), Value(Object), object, (.=))
 import Data.Aviation.Aip.Aip_SUP_and_AIC(Aip_SUP_and_AIC(Aip_SUP_and_AIC))
 import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs(Aip_SUP_and_AICs))
+import Data.Aviation.Aip.AipDate(AipDate(AipDate))
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.DAPType(DAPType', DAPType(SpecNotManTOCDAP, ChecklistTOCDAP, LegendInfoTablesTOCDAP, AeroProcChartsTOCDAP))
 import Data.Aviation.Aip.DAPEntries(DAPEntries(DAPEntries))
@@ -156,7 +157,7 @@ runSUP_AIC (Aip_SUP_AIC u _) =
         TagTreePos String
         -> Aip_SUP_and_AICs
       traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
-        Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum (Href href) title pubdate effdate]
+        Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum (Href href) title (AipDate pubdate) (AipDate effdate)]
       traverseAip_SUP_AIC _ =
         mempty
   in  Aip_SUP_AIC u <$> traverseAipHtmlRequestGet traverseAip_SUP_AIC u
@@ -206,7 +207,7 @@ runDAP (Aip_DAP u t _) =
               -> TagTreePos String
               -> DAPEntries
             traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) date amend]
+              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) (AipDate date) amend]
             traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
