@@ -5,7 +5,6 @@
 
 module Data.Aviation.Aip.AipDate(
   AipDate(..)
-, dropAipDateFile
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
@@ -43,9 +42,3 @@ instance Wrapped AipDate where
 
 instance AipDate ~ a =>
   Rewrapped AipDate a
-
-dropAipDateFile ::
-  AipDate
-  -> AipDate
-dropAipDateFile =
-  (_Wrapped %~ reverse . dropWhile (/= '/') . reverse)

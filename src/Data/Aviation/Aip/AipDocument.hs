@@ -25,6 +25,7 @@ import Data.Aviation.Aip.DAPEntries(DAPEntries(DAPEntries))
 import Data.Aviation.Aip.DAPEntry(DAPEntry(DAPEntry))
 import Data.Aviation.Aip.DAPDoc(DAPDoc(DAPDoc))
 import Data.Aviation.Aip.DAPDocs(DAPDocs(DAPDocs))
+import Data.Aviation.Aip.DocumentNumber(DocumentNumber(DocumentNumber))
 import Data.Aviation.Aip.Ersa(Ersa(Ersa))
 import Data.Aviation.Aip.Href(Href(Href), dropHrefFile)
 import Data.Aviation.Aip.HttpRequest(doGetRequest)
@@ -33,6 +34,7 @@ import Data.Aviation.Aip.ListItemLinks(ListItemLinks(ListItemLinks))
 import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1(ListItemLinks1))
 import Data.Aviation.Aip.ErsaAerodrome(ErsaAerodrome(ErsaAerodrome))
 import Data.Aviation.Aip.ErsaAerodromes(ErsaAerodromes(ErsaAerodromes))
+import Data.Aviation.Aip.Title(Title(Title))
 import Data.Aviation.Aip.Txt(Txt(Txt))
 import qualified Data.HashMap.Strict as HashMap(toList)
 import Network.TCP(HStream)
@@ -158,7 +160,7 @@ runSUP_AIC (Aip_SUP_AIC u _) =
         TagTreePos String
         -> Aip_SUP_and_AICs
       traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
-        Aip_SUP_and_AICs [Aip_SUP_and_AIC docnum (Href href) title (AipDate pubdate) (AipDate effdate)]
+        Aip_SUP_and_AICs [Aip_SUP_and_AIC (DocumentNumber docnum) (Href href) (Title title) (AipDate pubdate) (AipDate effdate)]
       traverseAip_SUP_AIC _ =
         mempty
   in  Aip_SUP_AIC u <$> traverseAipHtmlRequestGet traverseAip_SUP_AIC u

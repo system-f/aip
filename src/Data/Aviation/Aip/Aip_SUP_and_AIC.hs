@@ -6,15 +6,17 @@ module Data.Aviation.Aip.Aip_SUP_and_AIC(
 ) where
 
 import Data.Aviation.Aip.AipDate(AipDate)
+import Data.Aviation.Aip.DocumentNumber(DocumentNumber)
 import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Title(Title)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Papa hiding ((.=))
 
 data Aip_SUP_and_AIC =
   Aip_SUP_and_AIC 
-    String
+    DocumentNumber
     Href
-    String
+    Title
     AipDate
     AipDate
   deriving (Eq, Ord, Show)

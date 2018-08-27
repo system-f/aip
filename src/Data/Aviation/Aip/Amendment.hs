@@ -5,7 +5,6 @@
 
 module Data.Aviation.Aip.Amendment(
   Amendment(..)
-, dropAmendmentFile
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
@@ -43,9 +42,3 @@ instance Wrapped Amendment where
 
 instance Amendment ~ a =>
   Rewrapped Amendment a
-
-dropAmendmentFile ::
-  Amendment
-  -> Amendment
-dropAmendmentFile =
-  (_Wrapped %~ reverse . dropWhile (/= '/') . reverse)

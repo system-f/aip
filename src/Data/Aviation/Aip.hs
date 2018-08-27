@@ -26,4 +26,5 @@ import Data.Aviation.Aip.ListItemLink as A
 import Data.Aviation.Aip.ListItemLinks as A
 import Data.Aviation.Aip.ListItemLinks1 as A
 import Data.Aviation.Aip.SHA1 as A
+import Data.Aviation.Aip.Title as A
 import Data.Aviation.Aip.Txt as A

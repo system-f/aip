@@ -5,7 +5,6 @@
 
 module Data.Aviation.Aip.Txt(
   Txt(..)
-, dropTxtFile
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
@@ -43,9 +42,3 @@ instance Wrapped Txt where
 
 instance Txt ~ a =>
   Rewrapped Txt a
-
-dropTxtFile ::
-  Txt
-  -> Txt
-dropTxtFile =
-  (_Wrapped %~ reverse . dropWhile (/= '/') . reverse)
