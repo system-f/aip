@@ -112,7 +112,7 @@ getAipRecords cch dir =
                           let str = "Summary of SUP/AIC Current"
                               (p, s) = splitAt (length str) tx
                           in  if p == str then
-                                [Aip_Summary_SUP_AIC (Href href) s]
+                                [Aip_Summary_SUP_AIC (Href href) (AipDate (trimSpaces s))]
                               else
                                 [] 
                         li _ =

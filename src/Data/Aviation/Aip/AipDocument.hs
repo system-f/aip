@@ -49,7 +49,7 @@ data AipDocument book charts sup_aic dap ersa =
   Aip_Book Href AipDate book
   | Aip_Charts Href AipDate charts
   | Aip_SUP_AIC Href sup_aic
-  | Aip_Summary_SUP_AIC Href String
+  | Aip_Summary_SUP_AIC Href AipDate
   | Aip_DAP Href AipDate dap
   | Aip_DAH Href AipDate
   | Aip_ERSA Href AipDate ersa
