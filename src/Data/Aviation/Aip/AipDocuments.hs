@@ -1,4 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Aviation.Aip.AipDocuments(
   AipDocuments(..)
@@ -20,12 +23,24 @@ newtype AipDocuments book charts sup_aic dap ersa =
     [AipDocument book charts sup_aic dap ersa]
   deriving (Eq, Ord, Show)
 
+instance Semigroup (AipDocuments book charts sup_aic dap ersa) where
+  AipDocuments x <> AipDocuments y =
+    AipDocuments (x <> y)
+
 instance Monoid (AipDocuments book charts sup_aic dap ersa) where
+  mappend =
+    (<>)
   mempty =
-    AipDocuments
-      mempty
-  AipDocuments x `mappend` AipDocuments y =
-    AipDocuments (x `mappend` y)
+    AipDocuments []
+
+instance Wrapped (AipDocuments book charts sup_aic dap ersa) where
+  type Unwrapped (AipDocuments book charts sup_aic dap ersa) =
+    [AipDocument book charts sup_aic dap ersa]
+  _Wrapped' =
+    iso (\(AipDocuments x) -> x) AipDocuments
+
+instance (AipDocuments book charts sup_aic dap ersa) ~ x =>
+  Rewrapped (AipDocuments book charts sup_aic dap ersa) x
 
 type AipDocuments1 =
   AipDocuments () () () () ()
