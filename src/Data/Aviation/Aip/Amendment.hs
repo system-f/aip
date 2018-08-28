@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.Amendment(
   Amendment(..)
@@ -79,6 +80,11 @@ instance Amendment ~ a =>
 class AsAmendment a where
   _Amendment ::
     Prism' a Amendment
+  default _Amendment ::
+    IsAmendment a =>
+    Prism' a Amendment
+  _Amendment =
+    _IsAmendment
     
 instance AsAmendment Amendment where
   _Amendment =
@@ -103,6 +109,11 @@ instance FoldAmendment String where
 class FoldAmendment a => GetAmendment a where
   _GetAmendment ::
     Getter a Amendment
+  default _GetAmendment ::
+    HasAmendment a =>
+    Getter a Amendment
+  _GetAmendment =
+    amendment
     
 instance GetAmendment Amendment where
   _GetAmendment =
@@ -115,7 +126,12 @@ instance GetAmendment String where
 class SetAmendment a where
   _SetAmendment ::
     Setter' a Amendment
-    
+  default _SetAmendment ::
+    ManyAmendment a =>
+    Setter' a Amendment
+  _SetAmendment =
+    _ManyAmendment
+
 instance SetAmendment Amendment where
   _SetAmendment =
     id
@@ -139,6 +155,11 @@ instance ManyAmendment String where
 class (GetAmendment a, ManyAmendment a) => HasAmendment a where
   amendment ::
     Lens' a Amendment
+  default amendment ::
+    IsAmendment a =>
+    Lens' a Amendment
+  amendment =
+    _IsAmendment
 
 instance HasAmendment Amendment where
   amendment =

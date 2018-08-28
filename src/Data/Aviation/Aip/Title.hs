@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.Title(
   Title(..)
@@ -79,6 +80,11 @@ instance Title ~ a =>
 class AsTitle a where
   _Title ::
     Prism' a Title
+  default _Title ::
+    IsTitle a =>
+    Prism' a Title
+  _Title =
+    _IsTitle
     
 instance AsTitle Title where
   _Title =
@@ -103,6 +109,11 @@ instance FoldTitle String where
 class FoldTitle a => GetTitle a where
   _GetTitle ::
     Getter a Title
+  default _GetTitle ::
+    HasTitle a =>
+    Getter a Title
+  _GetTitle =
+    title
     
 instance GetTitle Title where
   _GetTitle =
@@ -115,6 +126,11 @@ instance GetTitle String where
 class SetTitle a where
   _SetTitle ::
     Setter' a Title
+  default _SetTitle ::
+    ManyTitle a =>
+    Setter' a Title
+  _SetTitle =
+    _ManyTitle
     
 instance SetTitle Title where
   _SetTitle =
@@ -139,6 +155,11 @@ instance ManyTitle String where
 class (GetTitle a, ManyTitle a) => HasTitle a where
   title ::
     Lens' a Title
+  default title ::
+    IsTitle a =>
+    Lens' a Title
+  title =
+    _IsTitle
 
 instance HasTitle Title where
   title =

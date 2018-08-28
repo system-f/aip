@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.Txt (
   Txt(..)
@@ -95,6 +96,11 @@ instance Txt ~ a =>
 class AsTxt a where
   _Txt ::
     Prism' a Txt
+  default _Txt ::
+    IsTxt a =>
+    Prism' a Txt
+  _Txt =
+    _IsTxt
     
 instance AsTxt Txt where
   _Txt =
@@ -119,6 +125,11 @@ instance FoldTxt String where
 class FoldTxt a => GetTxt a where
   _GetTxt ::
     Getter a Txt
+  default _GetTxt ::
+    HasTxt a =>
+    Getter a Txt
+  _GetTxt =
+    txt
     
 instance GetTxt Txt where
   _GetTxt =
@@ -131,7 +142,12 @@ instance GetTxt String where
 class SetTxt a where
   _SetTxt ::
     Setter' a Txt
-    
+  default _SetTxt ::
+    ManyTxt a =>
+    Traversal' a Txt
+  _SetTxt =
+    _ManyTxt
+
 instance SetTxt Txt where
   _SetTxt =
     id
@@ -155,6 +171,11 @@ instance ManyTxt String where
 class (GetTxt a, ManyTxt a) => HasTxt a where
   txt ::
     Lens' a Txt
+  default txt ::
+    IsTxt a =>
+    Lens' a Txt
+  txt =
+    _IsTxt
 
 instance HasTxt Txt where
   txt =

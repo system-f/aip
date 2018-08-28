@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.AipDate(
   AipDate(..)
@@ -79,7 +80,12 @@ instance AipDate ~ a =>
 class AsAipDate a where
   _AipDate ::
     Prism' a AipDate
-    
+  default _AipDate ::
+    IsAipDate a =>
+    Prism' a AipDate
+  _AipDate =
+    _IsAipDate
+
 instance AsAipDate AipDate where
   _AipDate =
     id
@@ -103,6 +109,11 @@ instance FoldAipDate String where
 class FoldAipDate a => GetAipDate a where
   _GetAipDate ::
     Getter a AipDate
+  default _GetAipDate ::
+    HasAipDate a =>
+    Getter a AipDate
+  _GetAipDate =
+    aipDate
     
 instance GetAipDate AipDate where
   _GetAipDate =
@@ -115,6 +126,11 @@ instance GetAipDate String where
 class SetAipDate a where
   _SetAipDate ::
     Setter' a AipDate
+  default _SetAipDate ::
+    ManyAipDate a =>
+    Setter' a AipDate
+  _SetAipDate =
+    _ManyAipDate
     
 instance SetAipDate AipDate where
   _SetAipDate =
@@ -139,6 +155,11 @@ instance ManyAipDate String where
 class (GetAipDate a, ManyAipDate a) => HasAipDate a where
   aipDate ::
     Lens' a AipDate
+  default aipDate ::
+    IsAipDate a =>
+    Lens' a AipDate
+  aipDate =
+    _IsAipDate
 
 instance HasAipDate AipDate where
   aipDate =

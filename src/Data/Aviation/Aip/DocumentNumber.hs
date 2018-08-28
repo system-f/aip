@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.DocumentNumber(
   DocumentNumber(..)
@@ -79,6 +80,11 @@ instance DocumentNumber ~ a =>
 class AsDocumentNumber a where
   _DocumentNumber ::
     Prism' a DocumentNumber
+  default _DocumentNumber ::
+    IsDocumentNumber a =>
+    Prism' a DocumentNumber
+  _DocumentNumber =
+    _IsDocumentNumber
     
 instance AsDocumentNumber DocumentNumber where
   _DocumentNumber =
@@ -103,6 +109,11 @@ instance FoldDocumentNumber String where
 class FoldDocumentNumber a => GetDocumentNumber a where
   _GetDocumentNumber ::
     Getter a DocumentNumber
+  default _GetDocumentNumber ::
+    HasDocumentNumber a =>
+    Getter a DocumentNumber
+  _GetDocumentNumber =
+    documentNumber
     
 instance GetDocumentNumber DocumentNumber where
   _GetDocumentNumber =
@@ -115,6 +126,11 @@ instance GetDocumentNumber String where
 class SetDocumentNumber a where
   _SetDocumentNumber ::
     Setter' a DocumentNumber
+  default _SetDocumentNumber ::
+    ManyDocumentNumber a =>
+    Setter' a DocumentNumber
+  _SetDocumentNumber =
+    _ManyDocumentNumber
     
 instance SetDocumentNumber DocumentNumber where
   _SetDocumentNumber =
@@ -139,6 +155,11 @@ instance ManyDocumentNumber String where
 class (GetDocumentNumber a, ManyDocumentNumber a) => HasDocumentNumber a where
   documentNumber ::
     Lens' a DocumentNumber
+  default documentNumber ::
+    IsDocumentNumber a =>
+    Lens' a DocumentNumber
+  documentNumber =
+    _IsDocumentNumber
 
 instance HasDocumentNumber DocumentNumber where
   documentNumber =
