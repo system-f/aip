@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.AipDocument(
   AipDocument(..)
@@ -61,6 +62,82 @@ type AipDocument1 =
 
 type AipDocument2 =
   AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa
+
+class AsAipDocument a where
+  _AipDocument ::
+    Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+  default _AipDocument ::
+    IsAipDocument a =>
+    Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+  _AipDocument =
+    _IsAipDocument
+    
+instance AsAipDocument AipDocument where
+  _AipDocument =
+    id
+
+class FoldAipDocument a where
+  _FoldAipDocument ::
+    Fold (a book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa)
+    
+instance FoldAipDocument AipDocument where
+  _FoldAipDocument =
+    id
+
+class FoldAipDocument a => GetAipDocument a where
+  _GetAipDocument ::
+    Getter (a book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa)
+  default _GetAipDocument ::
+    HasAipDocument a =>
+    Getter (a book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa)
+  _GetAipDocument =
+    aipDocument
+    
+instance GetAipDocument AipDocument where
+  _GetAipDocument =
+    id
+
+class SetAipDocument a where
+  _SetAipDocument ::
+    Setter (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+  default _SetAipDocument ::
+    ManyAipDocument a =>
+    Setter (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+  _SetAipDocument =
+    _ManyAipDocument
+
+instance SetAipDocument AipDocument where
+  _SetAipDocument =
+    id
+
+class (FoldAipDocument a, SetAipDocument a) => ManyAipDocument a where
+  _ManyAipDocument ::
+    Traversal (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa')  (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+
+instance ManyAipDocument AipDocument where
+  _ManyAipDocument =
+    id
+
+class (GetAipDocument a, ManyAipDocument a) => HasAipDocument a where
+  aipDocument ::
+    Lens (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+  default aipDocument ::
+    IsAipDocument a =>
+    Lens (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+  aipDocument =
+    _IsAipDocument
+
+instance HasAipDocument AipDocument where
+  aipDocument =
+    id
+
+class (HasAipDocument a, AsAipDocument a) => IsAipDocument a where
+  _IsAipDocument ::
+    Iso (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
+
+instance IsAipDocument AipDocument where
+  _IsAipDocument =
+    id
 
 instance (FromJSON book, FromJSON charts, FromJSON sup_aic, FromJSON dap, FromJSON ersa) => FromJSON (AipDocument book charts sup_aic dap ersa) where
   parseJSON (Object z) =
