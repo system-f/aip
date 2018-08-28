@@ -18,18 +18,6 @@ module Data.Aviation.Aip.Txt (
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
 import Papa hiding ((.=))
 
-newtype T = T String deriving (Eq, Ord, Show)
-
-instance Wrapped T where
-  type Unwrapped T = String
-  _Wrapped' =
-    iso
-      (\(T x) -> x)
-      T
-
-instance T ~ a =>
-  Rewrapped T a
-
 newtype Txt =
   Txt
     String
