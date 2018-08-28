@@ -40,6 +40,32 @@ instance Monoid Amendment where
   mempty =
     Amendment mempty
 
+instance Cons Amendment Amendment Char Char where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc Amendment Amendment Char Char where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each Amendment Amendment Char Char where
+  each =
+    _Wrapped . each
+
+instance Reversing Amendment where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated Amendment where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue Amendment = Char
+type instance Index Amendment = Int
+instance Ixed Amendment where
+  ix i =
+    _Wrapped . ix i
+
 instance Wrapped Amendment where
   type Unwrapped Amendment = String
   _Wrapped' =

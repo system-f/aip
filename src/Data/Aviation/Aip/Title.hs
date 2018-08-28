@@ -40,6 +40,32 @@ instance Monoid Title where
   mempty =
     Title mempty
 
+instance Cons Title Title Char Char where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc Title Title Char Char where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each Title Title Char Char where
+  each =
+    _Wrapped . each
+
+instance Reversing Title where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated Title where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue Title = Char
+type instance Index Title = Int
+instance Ixed Title where
+  ix i =
+    _Wrapped . ix i
+
 instance Wrapped Title where
   type Unwrapped Title = String
   _Wrapped' =

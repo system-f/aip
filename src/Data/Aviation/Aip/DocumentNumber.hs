@@ -40,6 +40,32 @@ instance Monoid DocumentNumber where
   mempty =
     DocumentNumber mempty
 
+instance Cons DocumentNumber DocumentNumber Char Char where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc DocumentNumber DocumentNumber Char Char where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each DocumentNumber DocumentNumber Char Char where
+  each =
+    _Wrapped . each
+
+instance Reversing DocumentNumber where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated DocumentNumber where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue DocumentNumber = Char
+type instance Index DocumentNumber = Int
+instance Ixed DocumentNumber where
+  ix i =
+    _Wrapped . ix i
+
 instance Wrapped DocumentNumber where
   type Unwrapped DocumentNumber = String
   _Wrapped' =

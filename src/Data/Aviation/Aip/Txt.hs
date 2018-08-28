@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Data.Aviation.Aip.Txt(
+module Data.Aviation.Aip.Txt (
   Txt(..)
 , AsTxt(..)
 , FoldTxt(..)
@@ -16,6 +16,18 @@ module Data.Aviation.Aip.Txt(
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
 import Papa hiding ((.=))
+
+newtype T = T String deriving (Eq, Ord, Show)
+
+instance Wrapped T where
+  type Unwrapped T = String
+  _Wrapped' =
+    iso
+      (\(T x) -> x)
+      T
+
+instance T ~ a =>
+  Rewrapped T a
 
 newtype Txt =
   Txt
@@ -39,6 +51,36 @@ instance Monoid Txt where
     (<>)
   mempty =
     Txt mempty
+
+instance Cons Txt Txt Char Char where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc Txt Txt Char Char where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each Txt Txt Char Char where
+  each =
+    _Wrapped . each
+
+instance Reversing Txt where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated Txt where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue Txt = Char
+type instance Index Txt = Int
+instance Ixed Txt where
+  ix i =
+    _Wrapped . ix i
+
+instance AsEmpty Txt where
+  _Empty =
+    _Wrapped . _Empty
 
 instance Wrapped Txt where
   type Unwrapped Txt = String

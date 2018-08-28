@@ -40,6 +40,32 @@ instance Monoid AipDate where
   mempty =
     AipDate mempty
 
+instance Cons AipDate AipDate Char Char where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc AipDate AipDate Char Char where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each AipDate AipDate Char Char where
+  each =
+    _Wrapped . each
+
+instance Reversing AipDate where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated AipDate where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue AipDate = Char
+type instance Index AipDate = Int
+instance Ixed AipDate where
+  ix i =
+    _Wrapped . ix i
+
 instance Wrapped AipDate where
   type Unwrapped AipDate = String
   _Wrapped' =
