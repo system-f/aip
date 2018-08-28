@@ -44,6 +44,32 @@ instance Wrapped ListItemLinks where
 instance ListItemLinks ~ x =>
   Rewrapped ListItemLinks x
 
+instance Cons ListItemLinks ListItemLinks ListItemLink ListItemLink where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc ListItemLinks ListItemLinks ListItemLink ListItemLink where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each ListItemLinks ListItemLinks ListItemLink ListItemLink where
+  each =
+    _Wrapped . each
+
+instance Reversing ListItemLinks where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated ListItemLinks where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue ListItemLinks = ListItemLink
+type instance Index ListItemLinks = Int
+instance Ixed ListItemLinks where
+  ix i =
+    _Wrapped . ix i
+
 instance FromJSON ListItemLinks where
   parseJSON =
     withArray "ListItemLinks" $ \v ->

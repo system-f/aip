@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Aviation.Aip.AipDocuments(
   AipDocuments(..)
@@ -56,3 +57,105 @@ instance (FromJSON book, FromJSON charts, FromJSON sup_aic, FromJSON dap, FromJS
 instance (ToJSON book, ToJSON charts, ToJSON sup_aic, ToJSON dap, ToJSON ersa) => ToJSON (AipDocuments book charts sup_aic dap ersa) where
   toJSON (AipDocuments x) =
     toJSON x
+
+instance Cons (AipDocuments book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa) where
+  _Cons =
+    _Wrapped . _Cons . seconding (from _Wrapped)
+
+instance Snoc (AipDocuments book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa) where
+  _Snoc =
+    _Wrapped . _Snoc . firsting (from _Wrapped)
+
+instance Each (AipDocuments book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa) (AipDocument book charts sup_aic dap ersa) where
+  each =
+    _Wrapped . each
+
+instance Reversing (AipDocuments book charts sup_aic dap ersa) where
+  reversing =
+    _Wrapped %~ reversing
+
+instance Plated (AipDocuments book charts sup_aic dap ersa) where
+  plate =
+    _Wrapped . plate . from _Wrapped
+
+type instance IxValue (AipDocuments book charts sup_aic dap ersa) = (AipDocument book charts sup_aic dap ersa)
+type instance Index (AipDocuments book charts sup_aic dap ersa) = Int
+instance Ixed (AipDocuments book charts sup_aic dap ersa) where
+  ix i =
+    _Wrapped . ix i
+
+class AsAipDocuments a where
+  _AipDocuments ::
+    Prism' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  default _AipDocuments ::
+    IsAipDocuments a =>
+    Prism' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  _AipDocuments =
+    _IsAipDocuments
+
+instance AsAipDocuments AipDocuments where
+  _AipDocuments =
+    id
+
+class FoldAipDocuments a where
+  _FoldAipDocuments ::
+    Fold (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    
+instance FoldAipDocuments AipDocuments where
+  _FoldAipDocuments =
+    id
+
+class FoldAipDocuments a => GetAipDocuments a where
+  _GetAipDocuments ::
+    Getter (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  default _GetAipDocuments ::
+    HasAipDocuments a =>
+    Getter (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  _GetAipDocuments =
+    aipDocuments
+    
+instance GetAipDocuments AipDocuments where
+  _GetAipDocuments =
+    id
+
+class SetAipDocuments a where
+  _SetAipDocuments ::
+    Setter' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  default _SetAipDocuments ::
+    ManyAipDocuments a =>
+    Setter' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  _SetAipDocuments =
+    _ManyAipDocuments
+
+instance SetAipDocuments AipDocuments where
+  _SetAipDocuments =
+    id
+
+class (FoldAipDocuments a, SetAipDocuments a) => ManyAipDocuments a where
+  _ManyAipDocuments ::
+    Traversal' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+
+instance ManyAipDocuments AipDocuments where
+  _ManyAipDocuments =
+    id
+
+class (GetAipDocuments a, ManyAipDocuments a) => HasAipDocuments a where
+  aipDocuments ::
+    Lens' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  default aipDocuments ::
+    IsAipDocuments a =>
+    Lens' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+  aipDocuments =
+    _IsAipDocuments
+
+instance HasAipDocuments AipDocuments where
+  aipDocuments =
+    id
+
+class (HasAipDocuments a, AsAipDocuments a) => IsAipDocuments a where
+  _IsAipDocuments ::
+    Iso' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    
+instance IsAipDocuments AipDocuments where
+  _IsAipDocuments =
+    id
