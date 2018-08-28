@@ -6,6 +6,13 @@ module Data.Aviation.Aip.AipDocument(
   AipDocument(..)
 , AipDocument1
 , AipDocument2
+, AsAipDocument(..)
+, FoldAipDocument(..)
+, GetAipDocument(..)
+, SetAipDocument(..)
+, ManyAipDocument(..)
+, HasAipDocument(..)
+, IsAipDocument(..)
 , runBook
 , runCharts
 , runSUP_AIC
