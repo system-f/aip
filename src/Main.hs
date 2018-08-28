@@ -17,7 +17,6 @@ main =
 
 {- todo
 
-* trim spaces from tags
 * library support
   * lens
   * Plated
@@ -26,5 +25,7 @@ main =
 * logging
 * command line args
 
+http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
+http://www.airservicesaustralia.com/services/aeronautical-information-and-management-services/electronic-data/
 
 -}

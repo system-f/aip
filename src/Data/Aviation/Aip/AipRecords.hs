@@ -13,6 +13,7 @@ import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
+import Data.Aviation.Aip.AipDate(AipDate(AipDate))
 import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
@@ -20,7 +21,6 @@ import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.Href (Href(Href))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex)
-import Data.Aviation.Aip.Txt(Txt(Txt))
 import Control.Monad.IO.Class(liftIO)
 import Papa hiding ((.=))
 import System.Directory(doesFileExist, getPermissions, readable, createDirectoryIfMissing)
@@ -80,6 +80,8 @@ getAipRecords cch dir =
           do  createDirectoryIfMissing True (takeDirectory z)
               let conf = defConfig { confIndent = Spaces 2 }
               LazyByteString.writeFile z (encodePretty' conf rs)
+      trimSpaces =
+          dropWhile isSpace
   in  do  c <- requestAipContents
           let h = hash (UTF8.encode c)
           let z = dir </> hashHex h ".json"
@@ -93,17 +95,17 @@ getAipRecords cch dir =
                     -> AipDocuments1
                   traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
                     let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
-                          [Aip_Book (Href href) (Txt tx) ()]
+                          [Aip_Book (Href href) (AipDate (trimSpaces tx)) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
-                          [Aip_Charts (Href href) (Txt tx) ()]
+                          [Aip_Charts (Href href) (AipDate (trimSpaces tx)) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
                           [Aip_SUP_AIC (Href href) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAP (Href href) (Txt tx) ()]
+                          [Aip_DAP (Href href) (AipDate (trimSpaces tx)) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAH (Href href) (Txt tx)]
+                          [Aip_DAH (Href href) (AipDate (trimSpaces tx))]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
-                          [Aip_ERSA (Href href) (Txt tx) ()]
+                          [Aip_ERSA (Href href) (AipDate (trimSpaces tx)) ()]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
                           [Aip_AandB_Charts (Href href)]
                         li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =

@@ -46,13 +46,13 @@ import Text.StringLike(StringLike)
 
 
 data AipDocument book charts sup_aic dap ersa =
-  Aip_Book Href Txt book
-  | Aip_Charts Href Txt charts
+  Aip_Book Href AipDate book
+  | Aip_Charts Href AipDate charts
   | Aip_SUP_AIC Href sup_aic
   | Aip_Summary_SUP_AIC Href String
-  | Aip_DAP Href Txt dap
-  | Aip_DAH Href Txt
-  | Aip_ERSA Href Txt ersa
+  | Aip_DAP Href AipDate dap
+  | Aip_DAH Href AipDate
+  | Aip_ERSA Href AipDate ersa
   | Aip_AandB_Charts Href
   deriving (Eq, Ord, Show)
 
@@ -190,7 +190,9 @@ runDAP (Aip_DAP u t _) =
   let eachDAP ::
         AipConn DAPDocs
       eachDAP =
-        let traverseDAP ::
+        let trimSpaces =
+              dropWhile isSpace
+            traverseDAP ::
               TagTreePos String
               -> [(DAPType', Href)]
             traverseDAP (TagTreePos (TagBranch "li" [] [TagBranch "a" [("href", hrefSpecNotManTOC)] [TagLeaf (TagText "Special Notices & Manuscript")]]) _ _ _) =
@@ -210,7 +212,7 @@ runDAP (Aip_DAP u t _) =
               -> TagTreePos String
               -> DAPEntries
             traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) (AipDate date) (Amendment amend)]
+              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) (AipDate date) (Amendment (trimSpaces amend))]
             traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
