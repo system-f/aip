@@ -25,6 +25,15 @@ newtype ListItemLinks =
     [ListItemLink]
   deriving (Eq, Ord, Show)
 
+instance FromJSON ListItemLinks where
+  parseJSON =
+    withArray "ListItemLinks" $ \v ->
+      ListItemLinks <$> traverse parseJSON (toList v)
+
+instance ToJSON ListItemLinks where
+  toJSON (ListItemLinks x) =
+    toJSON x
+
 instance Semigroup ListItemLinks where
   ListItemLinks x <> ListItemLinks y =
     ListItemLinks (x <> y)
@@ -69,15 +78,6 @@ type instance Index ListItemLinks = Int
 instance Ixed ListItemLinks where
   ix i =
     _Wrapped . ix i
-
-instance FromJSON ListItemLinks where
-  parseJSON =
-    withArray "ListItemLinks" $ \v ->
-      ListItemLinks <$> traverse parseJSON (toList v)
-
-instance ToJSON ListItemLinks where
-  toJSON (ListItemLinks x) =
-    toJSON x
 
 class AsListItemLinks a where
   _ListItemLinks ::

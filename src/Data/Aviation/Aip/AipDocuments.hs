@@ -8,6 +8,13 @@ module Data.Aviation.Aip.AipDocuments(
   AipDocuments(..)
 , AipDocuments1
 , AipDocuments2
+, AsAipDocuments(..)
+, FoldAipDocuments(..)
+, GetAipDocuments(..)
+, SetAipDocuments(..)
+, ManyAipDocuments(..)
+, HasAipDocuments(..)
+, IsAipDocuments(..)    
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
@@ -86,10 +93,10 @@ instance Ixed (AipDocuments book charts sup_aic dap ersa) where
 
 class AsAipDocuments a where
   _AipDocuments ::
-    Prism' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   default _AipDocuments ::
     IsAipDocuments a =>
-    Prism' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   _AipDocuments =
     _IsAipDocuments
 
@@ -120,10 +127,10 @@ instance GetAipDocuments AipDocuments where
 
 class SetAipDocuments a where
   _SetAipDocuments ::
-    Setter' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Setter (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   default _SetAipDocuments ::
     ManyAipDocuments a =>
-    Setter' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Setter (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   _SetAipDocuments =
     _ManyAipDocuments
 
@@ -133,7 +140,7 @@ instance SetAipDocuments AipDocuments where
 
 class (FoldAipDocuments a, SetAipDocuments a) => ManyAipDocuments a where
   _ManyAipDocuments ::
-    Traversal' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Traversal (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
 
 instance ManyAipDocuments AipDocuments where
   _ManyAipDocuments =
@@ -141,10 +148,10 @@ instance ManyAipDocuments AipDocuments where
 
 class (GetAipDocuments a, ManyAipDocuments a) => HasAipDocuments a where
   aipDocuments ::
-    Lens' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Lens (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   default aipDocuments ::
     IsAipDocuments a =>
-    Lens' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Lens (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   aipDocuments =
     _IsAipDocuments
 
@@ -154,7 +161,7 @@ instance HasAipDocuments AipDocuments where
 
 class (HasAipDocuments a, AsAipDocuments a) => IsAipDocuments a where
   _IsAipDocuments ::
-    Iso' (a book charts sup_aic dap ersa) (AipDocuments book charts sup_aic dap ersa)
+    Iso (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
     
 instance IsAipDocuments AipDocuments where
   _IsAipDocuments =
