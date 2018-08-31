@@ -13,6 +13,9 @@ import Papa hiding ((.=))
 import System.Directory
 import System.FilePath
 
+{-
+*** Exception: /tmp/def/aip/current/dap/AeroProcChartsTOC.htm: openBinaryFile: resource exhausted (Too many open files)
+-}
 main ::
   IO ()
 main =
@@ -32,30 +35,3 @@ downloadHref hf =
           liftIO $ createDirectoryIfMissing True o
           liftIO $ LazyByteString.writeFile (o </> k) r
 
-{-
-Href "aip.asp?pg=20&vdate=16AUG2018&ver=1"
-Href "current/aip/complete_16AUG2018.pdf"
-Href "current/aip/general_16AUG2018.pdf"
-Href "current/aip/enroute_16AUG2018.pdf"
-Href "current/aip/aerodrome_16AUG2018.pdf"
-Href "current/aip/cover_16AUG2018.pdf"
-Href "aip.asp?pg=60&vdate=24-MAY-2018&ver=1"
-Href "aip.asp?pg=60&vdate=24-MAY-2018&sect=ERCHigh&ver=1"
-Href "/aip/current/aipchart/erch/erch1_24MAY2018.pdf"
--}
-
-undefined = undefined
-{- todo
-
-* library support
-  * lens
-  * Plated
-* download function
-  * only write cache if succeeds
-* logging
-* command line args
-
-http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
-http://www.airservicesaustralia.com/services/aeronautical-information-and-management-services/electronic-data/
-
--}
