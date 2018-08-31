@@ -136,7 +136,7 @@ executable          aip
                     NoImplicitPrelude
 
   hs-source-dirs:
-                    src
+                    src-exe
 
 test-suite          tests
 
