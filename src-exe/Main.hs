@@ -35,3 +35,14 @@ downloadHref hf =
           liftIO $ createDirectoryIfMissing True o
           liftIO $ LazyByteString.writeFile (o </> k) r
 
+{- todo
+
+* download function
+  * only write cache if succeeds
+* logging
+* command line args
+
+http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
+http://www.airservicesaustralia.com/services/aeronautical-information-and-management-services/electronic-data/
+
+-}
