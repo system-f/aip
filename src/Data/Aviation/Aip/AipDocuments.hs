@@ -22,6 +22,7 @@ import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs)
 import Data.Aviation.Aip.AipDocument(AipDocument)
 import Data.Aviation.Aip.DAPDocs(DAPDocs)
 import Data.Aviation.Aip.Ersa(Ersa)
+import Data.Aviation.Aip.Href(SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
 import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1)
 import Papa
@@ -166,3 +167,14 @@ class (HasAipDocuments a, AsAipDocuments a) => IsAipDocuments a where
 instance IsAipDocuments AipDocuments where
   _IsAipDocuments =
     id
+
+----
+
+instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHref ersa) => SetHref (AipDocuments book charts sup_aic dap ersa) where
+instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHref ersa) => FoldHref (AipDocuments book charts sup_aic dap ersa) where
+  _FoldHref =
+    _ManyHref
+
+instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHref ersa) => ManyHref (AipDocuments book charts sup_aic dap ersa) where
+  _ManyHref =
+    _Wrapped . traverse . _ManyHref
