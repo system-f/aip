@@ -180,3 +180,11 @@ instance IsTitle Title where
 instance IsTitle String where
   _IsTitle =
     from _Wrapped
+
+instance SetTitle () where
+instance FoldTitle () where
+  _FoldTitle =
+    _ManyTitle
+instance ManyTitle () where
+  _ManyTitle _ x =
+    pure x

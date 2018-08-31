@@ -16,6 +16,7 @@ module Data.Aviation.Aip.ListItemLinks1(
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
+import Data.Aviation.Aip.Href(SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.ListItemLink(ListItemLink)
 import Papa
 
@@ -153,3 +154,20 @@ class (HasListItemLinks1 a, AsListItemLinks1 a) => IsListItemLinks1 a where
 instance IsListItemLinks1 ListItemLinks1 where
   _IsListItemLinks1 =
     id
+
+instance SetListItemLinks1 () where
+instance FoldListItemLinks1 () where
+  _FoldListItemLinks1 =
+    _ManyListItemLinks1
+instance ManyListItemLinks1 () where
+  _ManyListItemLinks1 _ x =
+    pure x
+
+instance SetHref ListItemLinks1 where
+instance FoldHref ListItemLinks1 where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref ListItemLinks1 where
+  _ManyHref =
+    _Wrapped . traverse . traverse . _ManyHref

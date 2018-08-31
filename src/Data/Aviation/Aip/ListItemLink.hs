@@ -13,7 +13,7 @@ module Data.Aviation.Aip.ListItemLink(
 , IsListItemLink(..)
 ) where
 
-import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Href(Href, SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), GetHref, HasHref(href))
 import Data.Aviation.Aip.Txt(Txt)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Papa hiding ((.=))
@@ -110,3 +110,27 @@ class (HasListItemLink a, AsListItemLink a) => IsListItemLink a where
 instance IsListItemLink ListItemLink where
   _IsListItemLink =
     id
+
+instance SetListItemLink () where
+instance FoldListItemLink () where
+  _FoldListItemLink =
+    _ManyListItemLink
+instance ManyListItemLink () where
+  _ManyListItemLink _ x =
+    pure x
+
+----
+
+instance SetHref ListItemLink where
+instance FoldHref ListItemLink where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref ListItemLink where
+  _ManyHref f (ListItemLink u x) =
+    ListItemLink <$> f u <*> pure x
+
+instance GetHref ListItemLink where
+instance HasHref ListItemLink where
+  href f (ListItemLink u x) =
+    fmap (\u' -> ListItemLink u' x) (f u)

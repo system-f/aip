@@ -184,3 +184,11 @@ instance IsTxt Txt where
 instance IsTxt String where
   _IsTxt =
     from _Wrapped
+
+instance SetTxt () where
+instance FoldTxt () where
+  _FoldTxt =
+    _ManyTxt
+instance ManyTxt () where
+  _ManyTxt _ x =
+    pure x

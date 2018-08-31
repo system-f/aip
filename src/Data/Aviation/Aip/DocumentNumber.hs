@@ -180,3 +180,11 @@ instance IsDocumentNumber DocumentNumber where
 instance IsDocumentNumber String where
   _IsDocumentNumber =
     from _Wrapped
+
+instance SetDocumentNumber () where
+instance FoldDocumentNumber () where
+  _FoldDocumentNumber =
+    _ManyDocumentNumber
+instance ManyDocumentNumber () where
+  _ManyDocumentNumber _ x =
+    pure x

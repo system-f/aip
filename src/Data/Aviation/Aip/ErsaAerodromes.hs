@@ -153,3 +153,11 @@ class (HasErsaAerodromes a, AsErsaAerodromes a) => IsErsaAerodromes a where
 instance IsErsaAerodromes ErsaAerodromes where
   _IsErsaAerodromes =
     id
+
+instance SetErsaAerodromes () where
+instance FoldErsaAerodromes () where
+  _FoldErsaAerodromes =
+    _ManyErsaAerodromes
+instance ManyErsaAerodromes () where
+  _ManyErsaAerodromes _ x =
+    pure x

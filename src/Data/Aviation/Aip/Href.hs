@@ -186,6 +186,14 @@ instance IsHref String where
   _IsHref =
     from _Wrapped
 
+instance SetHref () where
+instance FoldHref () where
+  _FoldHref =
+    _ManyHref
+instance ManyHref () where
+  _ManyHref _ x =
+    pure x
+
 dropHrefFile ::
   Href
   -> Href

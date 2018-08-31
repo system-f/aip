@@ -129,6 +129,15 @@ class (HasAipRecords a, AsAipRecords a) => IsAipRecords a where
 instance IsAipRecords AipRecords where
   _IsAipRecords =
     id
+
+instance SetAipRecords () where
+instance FoldAipRecords () where
+  _FoldAipRecords =
+    _ManyAipRecords
+instance ManyAipRecords () where
+  _ManyAipRecords _ x =
+    pure x
+
 getAipRecords ::
   Cache
   -> FilePath -- basedir

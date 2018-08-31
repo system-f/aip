@@ -35,7 +35,7 @@ import Data.Aviation.Aip.DAPDoc(DAPDoc(DAPDoc))
 import Data.Aviation.Aip.DAPDocs(DAPDocs(DAPDocs))
 import Data.Aviation.Aip.DocumentNumber(DocumentNumber(DocumentNumber))
 import Data.Aviation.Aip.Ersa(Ersa(Ersa))
-import Data.Aviation.Aip.Href(Href(Href), dropHrefFile)
+import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), dropHrefFile)
 import Data.Aviation.Aip.HttpRequest(doGetRequest)
 import Data.Aviation.Aip.ListItemLink(ListItemLink(ListItemLink))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks(ListItemLinks))
@@ -51,7 +51,6 @@ import Text.HTML.TagSoup(Tag(TagText, TagOpen))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
 import Text.HTML.TagSoup.Tree.Zipper(TagTreePos(TagTreePos), fromTagTree, traverseTree)
 import Text.StringLike(StringLike)
-
 
 data AipDocument book charts sup_aic dap ersa =
   Aip_Book Href AipDate book
@@ -188,6 +187,29 @@ instance (ToJSON book, ToJSON charts, ToJSON sup_aic, ToJSON dap, ToJSON ersa) =
   toJSON (Aip_AandB_Charts q) =
     object ["Aip_AandB_Charts" .= toJSON q]
   
+instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHref ersa) => SetHref (AipDocument book charts sup_aic dap ersa) where
+instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHref ersa) => FoldHref (AipDocument book charts sup_aic dap ersa) where
+  _FoldHref =
+    _ManyHref
+
+instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHref ersa) => ManyHref (AipDocument book charts sup_aic dap ersa) where
+  _ManyHref f (Aip_Book u d b) =
+    Aip_Book <$> f u <*> pure d <*> _ManyHref f b
+  _ManyHref f (Aip_Charts u d c) =
+    Aip_Charts <$> f u <*> pure d <*> _ManyHref f c
+  _ManyHref f (Aip_Summary_SUP_AIC u d) =
+    Aip_Summary_SUP_AIC <$> f u <*> pure d
+  _ManyHref f (Aip_SUP_AIC u c) =
+    Aip_SUP_AIC <$> f u <*> _ManyHref f c
+  _ManyHref f (Aip_DAP u d c) =
+    Aip_DAP <$> f u <*> pure d <*> _ManyHref f c
+  _ManyHref _ (Aip_DAH u c) =
+    Aip_DAH <$> pure u <*> pure c
+  _ManyHref f (Aip_ERSA u d b) =
+    Aip_ERSA <$> f u <*> pure d <*> _ManyHref f b
+  _ManyHref _ (Aip_AandB_Charts d) =
+    Aip_AandB_Charts <$> pure d
+
 runBook ::
   AipDocument book charts sup_aic dap ersa
   -> AipConn (AipDocument ListItemLinks charts sup_aic dap ersa)
@@ -243,8 +265,8 @@ runSUP_AIC (Aip_SUP_AIC u _) =
   let traverseAip_SUP_AIC ::
         TagTreePos String
         -> Aip_SUP_and_AICs
-      traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
-        Aip_SUP_and_AICs [Aip_SUP_and_AIC (DocumentNumber docnum) (Href href) (Title title) (AipDate pubdate) (AipDate effdate)]
+      traverseAip_SUP_AIC (TagTreePos (TagBranch "tr" _ (TagLeaf (TagText _) : TagBranch "td" [] [TagLeaf (TagText docnum)] : TagLeaf (TagText _): TagBranch "td" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText title)]] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText pubdate)] : TagLeaf (TagText _) : TagBranch "td" [("align","center")] [TagLeaf (TagText effdate)] : _)) _ _ _) =
+        Aip_SUP_and_AICs [Aip_SUP_and_AIC (DocumentNumber docnum) (Href hf) (Title title) (AipDate pubdate) (AipDate effdate)]
       traverseAip_SUP_AIC _ =
         mempty
   in  Aip_SUP_AIC u <$> traverseAipHtmlRequestGet traverseAip_SUP_AIC u
@@ -295,8 +317,8 @@ runDAP (Aip_DAP u t _) =
               Href
               -> TagTreePos String
               -> DAPEntries
-            traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",href)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (dropHrefFile u' ++ Href href) (Txt tx) (AipDate date) (Amendment (trimSpaces amend))]
+            traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",hf)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
+              DAPEntries [DAPEntry (dropHrefFile u' ++ Href hf) (Txt tx) (AipDate date) (Amendment (trimSpaces amend))]
             traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
@@ -395,10 +417,10 @@ traverseListItems ::
   -> TagTreePos String
   -> ListItemLinks
 traverseListItems p (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-  let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
-        if p href
+  let li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText tx)]]) =
+        if p hf
           then
-            [ListItemLink (Href href) (Txt tx)]
+            [ListItemLink (Href hf) (Txt tx)]
           else
             []
       li _ =

@@ -115,3 +115,11 @@ class (HasAipRecord a, AsAipRecord a) => IsAipRecord a where
 instance IsAipRecord AipRecord where
   _IsAipRecord =
     id
+
+instance SetAipRecord () where
+instance FoldAipRecord () where
+  _FoldAipRecord =
+    _ManyAipRecord
+instance ManyAipRecord () where
+  _ManyAipRecord _ x =
+    pure x

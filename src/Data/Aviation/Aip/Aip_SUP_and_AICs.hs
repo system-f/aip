@@ -16,6 +16,7 @@ module Data.Aviation.Aip.Aip_SUP_and_AICs(
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
+import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Aviation.Aip.Aip_SUP_and_AIC(Aip_SUP_and_AIC)
 import Papa
 
@@ -153,3 +154,22 @@ class (HasAip_SUP_and_AICs a, AsAip_SUP_and_AICs a) => IsAip_SUP_and_AICs a wher
 instance IsAip_SUP_and_AICs Aip_SUP_and_AICs where
   _IsAip_SUP_and_AICs =
     id
+
+instance SetAip_SUP_and_AICs () where
+instance FoldAip_SUP_and_AICs () where
+  _FoldAip_SUP_and_AICs =
+    _ManyAip_SUP_and_AICs
+instance ManyAip_SUP_and_AICs () where
+  _ManyAip_SUP_and_AICs _ x =
+    pure x
+
+----
+
+instance SetHref Aip_SUP_and_AICs where
+instance FoldHref Aip_SUP_and_AICs where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref Aip_SUP_and_AICs where
+  _ManyHref =
+    _Wrapped . traverse . _ManyHref

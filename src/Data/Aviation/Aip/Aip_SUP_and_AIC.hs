@@ -15,7 +15,7 @@ module Data.Aviation.Aip.Aip_SUP_and_AIC(
 
 import Data.Aviation.Aip.AipDate(AipDate)
 import Data.Aviation.Aip.DocumentNumber(DocumentNumber)
-import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Href(Href, SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), GetHref, HasHref(href))
 import Data.Aviation.Aip.Title(Title)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Papa hiding ((.=))
@@ -40,8 +40,8 @@ instance FromJSON Aip_SUP_and_AIC where
         v .: "effdate"
 
 instance ToJSON Aip_SUP_and_AIC where
-  toJSON (Aip_SUP_and_AIC docnum href title pubdate effdate) =
-    object ["docnum" .= docnum, "href" .= href, "title" .= title, "pubdate" .= pubdate, "effdate" .= effdate]
+  toJSON (Aip_SUP_and_AIC docnum u title pubdate effdate) =
+    object ["docnum" .= docnum, "href" .= u, "title" .= title, "pubdate" .= pubdate, "effdate" .= effdate]
 
 class AsAip_SUP_and_AIC a where
   _Aip_SUP_and_AIC ::
@@ -118,3 +118,27 @@ class (HasAip_SUP_and_AIC a, AsAip_SUP_and_AIC a) => IsAip_SUP_and_AIC a where
 instance IsAip_SUP_and_AIC Aip_SUP_and_AIC where
   _IsAip_SUP_and_AIC =
     id
+
+instance SetAip_SUP_and_AIC () where
+instance FoldAip_SUP_and_AIC () where
+  _FoldAip_SUP_and_AIC =
+    _ManyAip_SUP_and_AIC
+instance ManyAip_SUP_and_AIC () where
+  _ManyAip_SUP_and_AIC _ x =
+    pure x
+
+----
+
+instance SetHref Aip_SUP_and_AIC where
+instance FoldHref Aip_SUP_and_AIC where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref Aip_SUP_and_AIC where
+  _ManyHref f (Aip_SUP_and_AIC docnum u title pubdate effdate) =
+    Aip_SUP_and_AIC <$> pure docnum <*> f u <*> pure title <*> pure pubdate <*> pure effdate
+
+instance GetHref Aip_SUP_and_AIC where
+instance HasHref Aip_SUP_and_AIC where
+  href f (Aip_SUP_and_AIC docnum u title pubdate effdate) =
+    fmap (\u' -> Aip_SUP_and_AIC docnum u' title pubdate effdate) (f u)

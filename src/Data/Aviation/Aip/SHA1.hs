@@ -110,6 +110,14 @@ instance IsSHA1 SHA1 where
   _IsSHA1 =
     id
 
+instance SetSHA1 () where
+instance FoldSHA1 () where
+  _FoldSHA1 =
+    _ManySHA1
+instance ManySHA1 () where
+  _ManySHA1 _ x =
+    pure x
+
 hash ::
   [Word8]
   -> SHA1

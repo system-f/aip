@@ -102,3 +102,11 @@ class (HasConnErrorHttp4xx a, AsConnErrorHttp4xx a) => IsConnErrorHttp4xx a wher
 instance IsConnErrorHttp4xx ConnErrorHttp4xx where
   _IsConnErrorHttp4xx =
     id
+
+instance SetConnErrorHttp4xx () where
+instance FoldConnErrorHttp4xx () where
+  _FoldConnErrorHttp4xx =
+    _ManyConnErrorHttp4xx
+instance ManyConnErrorHttp4xx () where
+  _ManyConnErrorHttp4xx _ x =
+    pure x

@@ -16,6 +16,7 @@ module Data.Aviation.Aip.DAPEntries(
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
+import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Aviation.Aip.DAPEntry(DAPEntry)
 import Papa
 
@@ -154,3 +155,20 @@ class (HasDAPEntries a, AsDAPEntries a) => IsDAPEntries a where
 instance IsDAPEntries DAPEntries where
   _IsDAPEntries =
     id
+
+instance SetDAPEntries () where
+instance FoldDAPEntries () where
+  _FoldDAPEntries =
+    _ManyDAPEntries
+instance ManyDAPEntries () where
+  _ManyDAPEntries _ x =
+    pure x
+
+instance SetHref DAPEntries where
+instance FoldHref DAPEntries where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref DAPEntries where
+  _ManyHref =
+    _Wrapped . traverse . _ManyHref

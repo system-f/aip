@@ -16,7 +16,7 @@ module Data.Aviation.Aip.DAPDoc(
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.DAPType(DAPType)
 import Data.Aviation.Aip.DAPEntries(DAPEntries)
-import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Papa hiding ((.=))
 
 data DAPDoc =
@@ -35,8 +35,8 @@ instance FromJSON DAPDoc where
         v .: "entries"
 
 instance ToJSON DAPDoc where
-  toJSON (DAPDoc typ href entries) =
-    object ["type" .= typ, "href" .= href, "entries" .= entries]
+  toJSON (DAPDoc typ u entries) =
+    object ["type" .= typ, "href" .= u, "entries" .= entries]
 
 class AsDAPDoc a where
   _DAPDoc ::
@@ -113,3 +113,20 @@ class (HasDAPDoc a, AsDAPDoc a) => IsDAPDoc a where
 instance IsDAPDoc DAPDoc where
   _IsDAPDoc =
     id
+
+instance SetDAPDoc () where
+instance FoldDAPDoc () where
+  _FoldDAPDoc =
+    _ManyDAPDoc
+instance ManyDAPDoc () where
+  _ManyDAPDoc _ x =
+    pure x
+
+instance SetHref DAPDoc where
+instance FoldHref DAPDoc where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref DAPDoc where
+  _ManyHref f (DAPDoc typ u entries) =
+    DAPDoc <$> pure typ <*> f u <*> _ManyHref f entries

@@ -101,6 +101,13 @@ instance IsCache Cache where
   _IsCache =
     id
 
+instance SetCache () where
+instance FoldCache () where
+  _FoldCache =
+    _ManyCache
+instance ManyCache () where
+  _ManyCache _ x =
+    pure x
 
 ----
 

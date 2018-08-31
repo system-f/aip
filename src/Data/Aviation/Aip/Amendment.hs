@@ -180,3 +180,11 @@ instance IsAmendment Amendment where
 instance IsAmendment String where
   _IsAmendment =
     from _Wrapped
+
+instance SetAmendment () where
+instance FoldAmendment () where
+  _FoldAmendment =
+    _ManyAmendment
+instance ManyAmendment () where
+  _ManyAmendment _ x =
+    pure x

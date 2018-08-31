@@ -14,6 +14,7 @@ module Data.Aviation.Aip.Ersa(
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
+import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
 import Data.Aviation.Aip.ErsaAerodromes(ErsaAerodromes)
 import Papa hiding ((.=))
@@ -120,3 +121,22 @@ class (HasErsa a, AsErsa a) => IsErsa a where
 instance IsErsa Ersa where
   _IsErsa =
     id
+
+instance SetErsa () where
+instance FoldErsa () where
+  _FoldErsa =
+    _ManyErsa
+instance ManyErsa () where
+  _ManyErsa _ x =
+    pure x
+
+----
+
+instance SetHref Ersa where
+instance FoldHref Ersa where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref Ersa where
+  _ManyHref f (Ersa l a) =
+    Ersa <$> _ManyHref f l <*> pure a

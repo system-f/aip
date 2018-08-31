@@ -16,7 +16,7 @@ module Data.Aviation.Aip.DAPEntry(
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDate(AipDate)
 import Data.Aviation.Aip.Amendment(Amendment)
-import Data.Aviation.Aip.Href(Href)
+import Data.Aviation.Aip.Href(Href, SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), GetHref, HasHref(href))
 import Data.Aviation.Aip.Txt(Txt)
 import Papa hiding ((.=))
 
@@ -38,8 +38,8 @@ instance FromJSON DAPEntry where
         v .: "amendment"
 
 instance ToJSON DAPEntry where
-  toJSON (DAPEntry href txt date amendment) =
-    object ["href" .= href, "txt" .= txt, "date" .= date, "amendment" .= amendment]
+  toJSON (DAPEntry u txt date amendment) =
+    object ["href" .= u, "txt" .= txt, "date" .= date, "amendment" .= amendment]
 
 class AsDAPEntry a where
   _DAPEntry ::
@@ -116,3 +116,25 @@ class (HasDAPEntry a, AsDAPEntry a) => IsDAPEntry a where
 instance IsDAPEntry DAPEntry where
   _IsDAPEntry =
     id
+
+instance SetDAPEntry () where
+instance FoldDAPEntry () where
+  _FoldDAPEntry =
+    _ManyDAPEntry
+instance ManyDAPEntry () where
+  _ManyDAPEntry _ x =
+    pure x
+
+instance SetHref DAPEntry where
+instance FoldHref DAPEntry where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref DAPEntry where
+  _ManyHref f (DAPEntry u txt date amendment) =
+    DAPEntry <$> f u <*> pure txt <*> pure date <*> pure amendment
+
+instance GetHref DAPEntry where
+instance HasHref DAPEntry where
+  href f (DAPEntry u txt date amendment) =
+    fmap (\u' -> DAPEntry u' txt date amendment) (f u)
