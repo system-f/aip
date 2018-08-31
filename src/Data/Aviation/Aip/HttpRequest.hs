@@ -41,7 +41,8 @@ aipRequestMethod ::
   -> String
   -> Request ty
 aipRequestMethod m (Href s) z =
-  mkRequest m (URI "http:" (Just (URIAuth "" "www.airservicesaustralia.com" "")) ("/aip/" ++ s) z "")
+  let s' = bool ("/aip/" ++ s) s ("/aip/" `isPrefixOf` s)
+  in  mkRequest m (URI "http:" (Just (URIAuth "" "www.airservicesaustralia.com" "")) s' z "")
 
 doRequest ::
   HStream a =>

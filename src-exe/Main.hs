@@ -25,11 +25,12 @@ basedir =
   "/tmp/def"
  
 downloadHref hf =
-  do  r <- doGetRequest hf "" :: ExceptT ConnErrorHttp4xx IO LazyByteString.ByteString
-      let (j, k) = splitFileName (hf ^. _Wrapped)
-      let o = basedir </> j
-      liftIO $ createDirectoryIfMissing True o
-      liftIO $ LazyByteString.writeFile (o </> k) r
+  let hf' = bool (_Wrapped %~ ("/aip/" ++)) id ("/aip/" `isPrefixOf` (hf ^. _Wrapped)) $ hf
+  in  do  r <- doGetRequest hf' ""
+          let (j, k) = splitFileName (hf' ^. _Wrapped)
+          let o = basedir </> dropWhile isPathSeparator j
+          liftIO $ createDirectoryIfMissing True o
+          liftIO $ LazyByteString.writeFile (o </> k) r
 
 {-
 Href "aip.asp?pg=20&vdate=16AUG2018&ver=1"
