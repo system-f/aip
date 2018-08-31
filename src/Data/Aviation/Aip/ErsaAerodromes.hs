@@ -17,6 +17,7 @@ module Data.Aviation.Aip.ErsaAerodromes(
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
 import Data.Aviation.Aip.ErsaAerodrome(ErsaAerodrome)
+import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Papa
 
 newtype ErsaAerodromes =
@@ -161,3 +162,14 @@ instance FoldErsaAerodromes () where
 instance ManyErsaAerodromes () where
   _ManyErsaAerodromes _ x =
     pure x
+
+----
+
+instance SetHref ErsaAerodromes where
+instance FoldHref ErsaAerodromes where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref ErsaAerodromes where
+  _ManyHref =
+    _Wrapped . traverse . _ManyHref

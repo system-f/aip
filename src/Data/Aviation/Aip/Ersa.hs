@@ -139,4 +139,4 @@ instance FoldHref Ersa where
 
 instance ManyHref Ersa where
   _ManyHref f (Ersa l a) =
-    Ersa <$> _ManyHref f l <*> pure a
+    Ersa <$> _ManyHref f l <*> _ManyHref f a
