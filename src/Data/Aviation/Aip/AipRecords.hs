@@ -23,10 +23,10 @@ import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:),
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
 import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
-import Data.Aviation.Aip.AipRecord -- (AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord))
+import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord), FoldAipRecord, SetAipRecord, FoldAipRecord(_FoldAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
-import Data.Aviation.Aip.Href (Href(Href))
+import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex)
 import Control.Monad.IO.Class(liftIO)
@@ -182,25 +182,25 @@ getAipRecords cch dir =
                     TagTreePos String
                     -> AipDocuments1
                   traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
-                    let li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
-                          [Aip_Book (Href href) (AipDate (trimSpaces tx)) ()]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
-                          [Aip_Charts (Href href) (AipDate (trimSpaces tx)) ()]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
-                          [Aip_SUP_AIC (Href href) ()]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAP (Href href) (AipDate (trimSpaces tx)) ()]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
-                          [Aip_DAH (Href href) (AipDate (trimSpaces tx))]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
-                          [Aip_ERSA (Href href) (AipDate (trimSpaces tx)) ()]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
-                          [Aip_AandB_Charts (Href href)]
-                        li (TagBranch "li" [] [TagBranch "a" [("href", href)] [TagLeaf (TagText tx)]]) =
+                    let li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
+                          [Aip_Book (Href hf) (AipDate (trimSpaces tx)) ()]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
+                          [Aip_Charts (Href hf) (AipDate (trimSpaces tx)) ()]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
+                          [Aip_SUP_AIC (Href hf) ()]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
+                          [Aip_DAP (Href hf) (AipDate (trimSpaces tx)) ()]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
+                          [Aip_DAH (Href hf) (AipDate (trimSpaces tx))]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
+                          [Aip_ERSA (Href hf) (AipDate (trimSpaces tx)) ()]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
+                          [Aip_AandB_Charts (Href hf)]
+                        li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText tx)]]) =
                           let str = "Summary of SUP/AIC Current"
                               (p, s) = splitAt (length str) tx
                           in  if p == str then
-                                [Aip_Summary_SUP_AIC (Href href) (AipDate (trimSpaces s))]
+                                [Aip_Summary_SUP_AIC (Href hf) (AipDate (trimSpaces s))]
                               else
                                 [] 
                         li _ =
@@ -226,3 +226,12 @@ instance SetAipRecord AipRecords where
 instance ManyAipRecord AipRecords where
   _ManyAipRecord f (AipRecords s r) =
     AipRecords s <$> traverse f r
+
+instance SetHref AipRecords where
+instance FoldHref AipRecords where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref AipRecords where
+  _ManyHref f (AipRecords s r) =
+    AipRecords <$> pure s <*> (traverse . _ManyHref) f r

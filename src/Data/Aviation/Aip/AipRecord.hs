@@ -18,6 +18,7 @@ import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs)
 import Data.Aviation.Aip.AipDocuments(AipDocuments)
 import Data.Aviation.Aip.DAPDocs(DAPDocs)
 import Data.Aviation.Aip.Ersa(Ersa)
+import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
 import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1)
 import Data.Time(UTCTime)
@@ -123,3 +124,14 @@ instance FoldAipRecord () where
 instance ManyAipRecord () where
   _ManyAipRecord _ x =
     pure x
+
+----
+
+instance SetHref AipRecord where
+instance FoldHref AipRecord where
+  _FoldHref =
+    _ManyHref
+
+instance ManyHref AipRecord where
+  _ManyHref f (AipRecord t p) =
+    AipRecord <$> pure t <*> _ManyHref f p
