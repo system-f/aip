@@ -80,6 +80,7 @@ library
                     Data.Aviation.Aip.DAPEntries
                     Data.Aviation.Aip.DAPEntry
                     Data.Aviation.Aip.DAPType
+                    Data.Aviation.Aip.DocumentNumber
                     Data.Aviation.Aip.Ersa
                     Data.Aviation.Aip.ErsaAerodrome
                     Data.Aviation.Aip.ErsaAerodromes

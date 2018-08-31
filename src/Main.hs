@@ -4,7 +4,9 @@ module Main(
   main
 ) where
 
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
+import qualified Data.ByteString.Lazy as LazyByteString(ByteString, writeFile)
 import System.IO(print)
 import Data.Aviation.Aip
 import Papa hiding ((.=))
@@ -12,8 +14,15 @@ import Papa hiding ((.=))
 main ::
   IO ()
 main =
-  do  x <- runExceptT $ getAipRecords ReadWriteCache "/tmp/abc"
-      print x
+  do  e <-  runExceptT $ 
+              do  x <- getAipRecords ReadWriteCache "/tmp/abc"
+                  mapMOf_ _ManyHref downloadHref x
+      print e
+    
+downloadHref hf =
+  do  r <- doGetRequest hf "" :: ExceptT ConnErrorHttp4xx IO LazyByteString.ByteString
+      let w = r
+      liftIO $ print hf
 
 {- todo
 
