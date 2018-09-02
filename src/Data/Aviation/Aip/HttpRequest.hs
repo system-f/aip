@@ -5,6 +5,7 @@ module Data.Aviation.Aip.HttpRequest(
 , aipRequestPost
 , aipRequestMethod
 , doRequest
+, doRequest'
 , doGetRequest
 , doPostRequest
 , requestAipContents
@@ -13,9 +14,10 @@ module Data.Aviation.Aip.HttpRequest(
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
 import Data.Aviation.Aip.Href(Href(Href))
-import Network.HTTP(HStream, Request, RequestMethod(GET, POST), mkRequest, setRequestBody, simpleHTTP, rspCode, rspBody)
+import Network.HTTP(HStream, Request, RequestMethod(GET, POST), mkRequest, setRequestBody, simpleHTTP, simpleHTTP_, rspCode, rspBody)
 import Network.BufferType(BufferType)
 import Network.URI(URI(URI), URIAuth(URIAuth))
+import Network.TCP
 import Papa
 
 aipRequestGet ::
@@ -51,6 +53,25 @@ doRequest ::
 doRequest r =
   ExceptT $
     do  x <- simpleHTTP r
+        pure $
+          case x of
+            Left e ->
+              Left (IsConnError e)
+            Right c ->
+              let (r1, r2, r3) = rspCode c
+              in  if r1 == 4 then
+                    Left (Http4xx r2 r3)
+                  else
+                    Right (rspBody c)
+
+doRequest' ::
+  HStream a =>
+  Request a
+  -> HandleStream a
+  -> ExceptT ConnErrorHttp4xx IO a
+doRequest' r h =
+  ExceptT $
+    do  x <- simpleHTTP_ h r
         pure $
           case x of
             Left e ->

@@ -4,7 +4,6 @@ module Main(
   main
 ) where
 
-import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
@@ -13,10 +12,8 @@ import Data.Aviation.Aip
 import Papa hiding ((.=))
 import System.Directory
 import System.FilePath
+import Network.HTTP
 
-{-
-*** Exception: /tmp/def/aip/current/dap/AeroProcChartsTOC.htm: openBinaryFile: resource exhausted (Too many open files)
--}
 main ::
   IO ()
 main =
@@ -30,20 +27,25 @@ basedir =
  
 downloadHref hf =
   let hf' = bool (_Wrapped %~ ("/aip/" ++)) id ("/aip/" `isPrefixOf` (hf ^. _Wrapped)) $ hf
-  in  do  r <- doGetRequest hf' ""
+  in  do  
+          let q = aipRequestGet hf' ""
+          auth <- getAuth q
+          c <- liftIO $ openStream (host auth) 80
+          r <- doRequest' (normalizeRequest defaultNormalizeRequestOptions q) c
           let (j, k) = splitFileName (hf' ^. _Wrapped)
           let o = basedir </> dropWhile isPathSeparator j
-          liftIO $ createDirectoryIfMissing True o
-          liftIO $ writeFile' (o </> k) r
-
-writeFile' p x =
-  LazyByteString.writeFile p x `catch` \e -> print (e :: IOException) <* getLine
+          liftIO $
+            do  createDirectoryIfMissing True o
+                LazyByteString.writeFile (o </> k) r
+                close c
 
 {- todo
 
+* fix HTTP downloads
 * download function
   * only write cache if succeeds
 * logging
+* ERSA complete
 * command line args
 
 http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
