@@ -4,9 +4,10 @@ module Main(
   main
 ) where
 
+import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
-import qualified Data.ByteString.Lazy as LazyByteString(ByteString, writeFile)
+import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import System.IO(print)
 import Data.Aviation.Aip
 import Papa hiding ((.=))
@@ -33,7 +34,10 @@ downloadHref hf =
           let (j, k) = splitFileName (hf' ^. _Wrapped)
           let o = basedir </> dropWhile isPathSeparator j
           liftIO $ createDirectoryIfMissing True o
-          liftIO $ LazyByteString.writeFile (o </> k) r
+          liftIO $ writeFile' (o </> k) r
+
+writeFile' p x =
+  LazyByteString.writeFile p x `catch` \e -> print (e :: IOException) <* getLine
 
 {- todo
 
@@ -43,6 +47,6 @@ downloadHref hf =
 * command line args
 
 http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
-http://www.airservicesaustralia.com/services/aeronautical-information-and-management-services/electronic-data/
+http://www.airservicesaustralia.com /services/aeronautical-information-and-management-services/electronic-data/
 
 -}
