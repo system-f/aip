@@ -21,10 +21,15 @@ main =
               do  x <- getAipRecords ReadWriteCache "/tmp/abc"
                   mapMOf_ _ManyHref (\k -> liftIO (print k) *> downloadHref k) x
       print e
-   
+
+basedir ::
+  FilePath
 basedir =
   "/tmp/def"
- 
+
+downloadHref ::
+  Href
+  -> AipConn () 
 downloadHref hf =
   let hf' = bool (_Wrapped %~ ("/aip/" ++)) id ("/aip/" `isPrefixOf` (hf ^. _Wrapped)) $ hf
   in  do  
@@ -33,10 +38,10 @@ downloadHref hf =
           c <- liftIO $ openStream (host auth) 80
           r <- doRequest' (normalizeRequest defaultNormalizeRequestOptions q) c
           let (j, k) = splitFileName (hf' ^. _Wrapped)
-          let o = basedir </> dropWhile isPathSeparator j
+          let ot = basedir </> dropWhile isPathSeparator j
           liftIO $
-            do  createDirectoryIfMissing True o
-                LazyByteString.writeFile (o </> k) r
+            do  createDirectoryIfMissing True ot
+                LazyByteString.writeFile (ot </> k) r
                 close c
 
 {- todo
