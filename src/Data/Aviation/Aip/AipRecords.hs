@@ -28,7 +28,7 @@ import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
-import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex)
+import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), hash, hashHex)
 import Control.Monad.IO.Class(liftIO)
 import Papa hiding ((.=))
 import System.Directory(doesFileExist, getPermissions, readable, createDirectoryIfMissing)
@@ -235,3 +235,15 @@ instance FoldHref AipRecords where
 instance ManyHref AipRecords where
   _ManyHref f (AipRecords s r) =
     AipRecords <$> pure s <*> (traverse . _ManyHref) f r
+
+instance GetSHA1 AipRecords where
+  
+instance ManySHA1 AipRecords where
+  _ManySHA1 =
+    sha1
+
+instance SetSHA1 AipRecords where
+  
+instance HasSHA1 AipRecords where
+  sha1 k (AipRecords s r) =
+    fmap (\s' -> AipRecords s' r) (k s)
