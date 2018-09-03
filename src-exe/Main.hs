@@ -56,9 +56,19 @@ downloadHref hf =
 
 * download function
   * only write cache if succeeds
+
+      f <- downloadFileHTTP url
+      a <- f `hasAlreadyCached` cacheDir
+      case a of
+        Nothing -> -- no cache
+          files <- traverseHTTP f -- get all URLs
+          downloadAll files outdir
+          writeCache f files cacheDir
+        Just c ->
+          pure c
+* All As* requires Many* =>
 * logging
 * command line args
-
 http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
 http://www.airservicesaustralia.com /services/aeronautical-information-and-management-services/electronic-data/
 
