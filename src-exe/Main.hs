@@ -50,7 +50,6 @@ downloadHref hf =
 * download function
   * only write cache if succeeds
 * logging
-* ERSA complete
 * command line args
 
 http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
