@@ -382,6 +382,14 @@ runERSA (Aip_DAP u t x) =
 runERSA (Aip_DAH u x) =
   pure (Aip_DAH u x)
 runERSA (Aip_ERSA u t _) =
+  {-
+  <td>
+    
+    <a href="/aip/current/ersa/ersa_rds_index_16AUG2018.pdf">ERSA Complete</a>
+    
+    </td>
+  -}
+
   let traverseErsaAerodromes ::
         TagTreePos String
         -> ErsaAerodromes
@@ -402,7 +410,14 @@ runERSA (Aip_ERSA u t _) =
         -> ListItemLinks
       traverseErsaDocs =
         traverseListItems (isSuffixOf ".pdf")
-  in  Aip_ERSA u t <$> traverseAipHtmlRequestGet (Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes) u
+      traverseErsaCompletes ::
+        TagTreePos String
+        -> [Href]
+      traverseErsaCompletes (TagTreePos (TagBranch "td" _ [TagLeaf (TagText _),TagBranch "a" [("href", u')] [TagLeaf (TagText "ERSA Complete")],TagLeaf (TagText _)]) _ _ _) =
+        [Href u' ]
+      traverseErsaCompletes _ =
+        []
+  in  Aip_ERSA u t <$> traverseAipHtmlRequestGet (Ersa <$> traverseErsaDocs <*> traverseErsaAerodromes <*> traverseErsaCompletes) u
 runERSA (Aip_AandB_Charts x) =
   pure (Aip_AandB_Charts x)
 
