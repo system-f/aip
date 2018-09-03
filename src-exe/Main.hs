@@ -46,7 +46,6 @@ downloadHref hf =
 
 {- todo
 
-* fix HTTP downloads
 * download function
   * only write cache if succeeds
 * logging
