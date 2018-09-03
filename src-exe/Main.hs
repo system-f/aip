@@ -14,24 +14,32 @@ import System.Directory
 import System.FilePath
 import Network.HTTP
 
-main ::
-  IO ()
-main =
-  do  e <-  runExceptT $ 
-              do  x <- getAipRecords ReadWriteCache "/tmp/abc"
-                  mapMOf_ _ManyHref (\k -> liftIO (print k) *> downloadHref k) x
-      print e
-
 basedir ::
   FilePath
 basedir =
   "/tmp/def"
 
+main ::
+  IO ()
+main =
+  do  e <-  runExceptT $ 
+              do  x <- getAipRecords ReadWriteCache basedir
+                  mapMOf_ _ManyHref (\k -> liftIO (print k) *> downloadHref k) x
+      print e
+
+aipPrefix ::
+  ASetter a b String String
+  -> a
+  -> b
+aipPrefix a =
+  let p = "/aip/" in
+  a %~ (bool <$> (p ++) <*> id <*> isPrefixOf p)
+
 downloadHref ::
   Href
   -> AipConn () 
 downloadHref hf =
-  let hf' = bool (_Wrapped %~ ("/aip/" ++)) id ("/aip/" `isPrefixOf` (hf ^. _Wrapped)) $ hf
+  let hf' = aipPrefix _Wrapped hf
   in  do  
           let q = aipRequestGet hf' ""
           auth <- getAuth q
