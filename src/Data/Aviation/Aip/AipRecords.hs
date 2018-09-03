@@ -12,6 +12,7 @@ module Data.Aviation.Aip.AipRecords(
 , HasAipRecords(..)
 , IsAipRecords(..)  
 , getAipRecords
+, getAipRecords'
 ) where
 
 import Codec.Binary.UTF8.String as UTF8(encode)
@@ -28,7 +29,7 @@ import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
-import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex)
+import Data.Aviation.Aip.SHA1(SHA1, hash, hashHex, FoldSHA1(_FoldSHA1), GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1))
 import Control.Monad.IO.Class(liftIO)
 import Papa hiding ((.=))
 import System.Directory(doesFileExist, getPermissions, readable, createDirectoryIfMissing)
@@ -215,6 +216,50 @@ getAipRecords cch dir =
                       liftIO $ writeCache z rs
                       pure rs
 
+-- no cache
+getAipRecords' ::
+  AipConn AipRecords
+getAipRecords' =
+  let trimSpaces =
+          dropWhile isSpace
+  in  do  c <- requestAipContents
+          let h = hash (UTF8.encode c)
+          let traverseAipDocuments ::
+                TagTreePos String
+                -> AipDocuments1
+              traverseAipDocuments (TagTreePos (TagBranch "ul" [] x) _ _ _) =
+                let li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "AIP Book")], TagLeaf (TagText tx)]) =
+                      [Aip_Book (Href hf) (AipDate (trimSpaces tx)) ()]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "AIP Charts")], TagLeaf (TagText tx)]) =
+                      [Aip_Charts (Href hf) (AipDate (trimSpaces tx)) ()]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "AIP Supplements and Aeronautical  Information Circulars (AIC)")]]) =
+                      [Aip_SUP_AIC (Href hf) ()]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Departure and Approach Procedures (DAP)")], TagLeaf (TagText tx)]) =
+                      [Aip_DAP (Href hf) (AipDate (trimSpaces tx)) ()]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Designated Airspace Handbook (DAH)")], TagLeaf (TagText tx)]) =
+                      [Aip_DAH (Href hf) (AipDate (trimSpaces tx))]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "En Route Supplement Australia (ERSA)")], TagLeaf (TagText tx)]) =
+                      [Aip_ERSA (Href hf) (AipDate (trimSpaces tx)) ()]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
+                      [Aip_AandB_Charts (Href hf)]
+                    li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText tx)]]) =
+                      let str = "Summary of SUP/AIC Current"
+                          (p, s) = splitAt (length str) tx
+                      in  if p == str then
+                            [Aip_Summary_SUP_AIC (Href hf) (AipDate (trimSpaces s))]
+                          else
+                            [] 
+                    li _ =
+                      []
+                in  AipDocuments (x >>= li)
+              traverseAipDocuments _ =
+                mempty
+          let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
+          q <- AipDocuments <$> traverse runAipDocument a
+          t <- liftIO getCurrentTime
+          let rs = AipRecords h (AipRecord t q :| [])
+          pure rs
+
 ----
 
 instance FoldAipRecord AipRecords where
@@ -235,3 +280,19 @@ instance FoldHref AipRecords where
 instance ManyHref AipRecords where
   _ManyHref f (AipRecords s r) =
     AipRecords <$> pure s <*> (traverse . _ManyHref) f r
+
+instance FoldSHA1 AipRecords where
+  _FoldSHA1 =
+    sha1
+
+instance GetSHA1 AipRecords where
+
+instance ManySHA1 AipRecords where
+  _ManySHA1 =
+    sha1
+
+instance SetSHA1 AipRecords where
+  
+instance HasSHA1 AipRecords where
+  sha1 k (AipRecords s r) =
+    fmap (\s' -> AipRecords s' r) (k s)
