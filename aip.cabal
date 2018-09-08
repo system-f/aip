@@ -52,6 +52,7 @@ library
                     , text
                     , iso8601-time
                     , aeson-pretty
+                    , exceptions
 
   ghc-options:
                     -Wall
@@ -128,6 +129,7 @@ executable          aip
                     , text
                     , iso8601-time
                     , aeson-pretty
+                    , exceptions
                     
   ghc-options:
                     -Wall

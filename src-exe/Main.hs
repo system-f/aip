@@ -13,18 +13,31 @@ import Papa hiding ((.=))
 import System.Directory
 import System.FilePath
 import Network.HTTP
+import Control.Exception hiding (catch)
+import Control.Monad.Catch
 
 basedir ::
   FilePath
 basedir =
-  "/tmp/def"
+  "/tmp/abc"
+
+catchIOException :: 
+  MonadCatch m =>
+  m a ->
+  (IOException -> m a)
+  -> m a
+catchIOException =
+  catch
 
 main ::
   IO ()
 main =
   do  e <-  runExceptT $ 
               do  x <- getAipRecords ReadWriteCache basedir
-                  mapMOf_ _ManyHref (\k -> liftIO (print k) *> downloadHref k) x
+                  let h = basedir </> hashHex (x ^. sha1) ""
+                  ee <- liftIO $ doesDirectoryExist h
+                  let dl = mapMOf_ _ManyHref (\k -> liftIO (print k) *> downloadHref h k) x
+                  catchIOException (ee `unless` dl) (\_ -> liftIO $ removeDirectoryRecursive h)
       print e
 
 aipPrefix ::
@@ -36,9 +49,10 @@ aipPrefix a =
   a %~ (bool <$> (p ++) <*> id <*> isPrefixOf p)
 
 downloadHref ::
-  Href
+  FilePath
+  -> Href
   -> AipConn () 
-downloadHref hf =
+downloadHref d hf =
   let hf' = aipPrefix _Wrapped hf
   in  do  
           let q = aipRequestGet hf' ""
@@ -46,7 +60,7 @@ downloadHref hf =
           c <- liftIO $ openStream (host auth) 80
           r <- doRequest' (normalizeRequest defaultNormalizeRequestOptions q) c
           let (j, k) = splitFileName (hf' ^. _Wrapped)
-          let ot = basedir </> dropWhile isPathSeparator j
+          let ot = d </> dropWhile isPathSeparator j
           liftIO $
             do  createDirectoryIfMissing True ot
                 LazyByteString.writeFile (ot </> k) r
@@ -67,8 +81,11 @@ downloadHref hf =
         Just c ->
           pure c
 * All As* requires Many* =>
+* fix ("/aip/" ++) so that links work
 * logging
 * command line args
+* tidy up cabal/nix
+
 http://classic.austlii.edu.au/au/legis/cth/consol_reg/casr1998333/s175.145.html
 http://www.airservicesaustralia.com /services/aeronautical-information-and-management-services/electronic-data/
 
