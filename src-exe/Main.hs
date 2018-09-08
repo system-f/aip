@@ -68,7 +68,6 @@ downloadHref d hf =
 
 {- todo
 
-* All As* requires Many* =>
 * logging
 * command line args
 * tidy up cabal/nix
