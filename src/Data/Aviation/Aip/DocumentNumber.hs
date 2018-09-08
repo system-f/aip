@@ -77,7 +77,7 @@ instance Wrapped DocumentNumber where
 instance DocumentNumber ~ a =>
   Rewrapped DocumentNumber a
 
-class AsDocumentNumber a where
+class ManyDocumentNumber a => AsDocumentNumber a where
   _DocumentNumber ::
     Prism' a DocumentNumber
   default _DocumentNumber ::

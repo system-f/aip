@@ -41,7 +41,7 @@ instance ToJSON AipRecord where
   toJSON (AipRecord t p) =
     object ["utc" .= t, "documents" .= p]
 
-class AsAipRecord a where
+class ManyAipRecord a => AsAipRecord a where
   _AipRecord ::
     Prism' a AipRecord
   default _AipRecord ::

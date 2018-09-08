@@ -82,7 +82,7 @@ instance Wrapped Href where
 instance Href ~ a =>
   Rewrapped Href a
 
-class AsHref a where
+class ManyHref a => AsHref a where
   _Href ::
     Prism' a Href
   default _Href ::

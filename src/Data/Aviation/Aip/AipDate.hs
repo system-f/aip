@@ -77,7 +77,7 @@ instance Wrapped AipDate where
 instance AipDate ~ a =>
   Rewrapped AipDate a
 
-class AsAipDate a where
+class ManyAipDate a => AsAipDate a where
   _AipDate ::
     Prism' a AipDate
   default _AipDate ::

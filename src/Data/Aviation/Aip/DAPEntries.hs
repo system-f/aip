@@ -80,7 +80,7 @@ instance Ixed DAPEntries where
   ix i =
     _Wrapped . ix i
 
-class AsDAPEntries a where
+class ManyDAPEntries a => AsDAPEntries a where
   _DAPEntries ::
     Prism' a DAPEntries
   default _DAPEntries ::

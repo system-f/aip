@@ -36,7 +36,7 @@ main =
               do  x <- getAipRecords ReadWriteCache basedir
                   let h = basedir </> hashHex (x ^. sha1) ""
                   ee <- liftIO $ doesDirectoryExist h
-                  let dl = mapMOf_ _ManyHref (\k -> liftIO (print k) *> downloadHref h k) x
+                  let dl = mapMOf_ _ManyHref (\k -> {- liftIO (print k) *> -} downloadHref h k) x
                   catchIOException (ee `unless` dl) (\_ -> liftIO $ removeDirectoryRecursive h)
       print e
 
@@ -68,20 +68,7 @@ downloadHref d hf =
 
 {- todo
 
-* download function
-  * only write cache if succeeds
-
-      f <- downloadFileHTTP url
-      a <- f `hasAlreadyCached` cacheDir
-      case a of
-        Nothing -> -- no cache
-          files <- traverseHTTP f -- get all URLs
-          downloadAll files outdir
-          writeCache f files cacheDir
-        Just c ->
-          pure c
 * All As* requires Many* =>
-* fix ("/aip/" ++) so that links work
 * logging
 * command line args
 * tidy up cabal/nix

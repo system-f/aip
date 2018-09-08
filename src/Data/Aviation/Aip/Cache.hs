@@ -25,7 +25,7 @@ data Cache =
   | NoCache
   deriving (Eq, Ord, Show)
 
-class AsCache a where
+class ManyCache a => AsCache a where
   _Cache ::
     Prism' a Cache
   default _Cache ::

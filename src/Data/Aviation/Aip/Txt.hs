@@ -81,7 +81,7 @@ instance Wrapped Txt where
 instance Txt ~ a =>
   Rewrapped Txt a
 
-class AsTxt a where
+class ManyTxt a => AsTxt a where
   _Txt ::
     Prism' a Txt
   default _Txt ::

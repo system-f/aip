@@ -77,7 +77,7 @@ instance Wrapped Amendment where
 instance Amendment ~ a =>
   Rewrapped Amendment a
 
-class AsAmendment a where
+class ManyAmendment a => AsAmendment a where
   _Amendment ::
     Prism' a Amendment
   default _Amendment ::

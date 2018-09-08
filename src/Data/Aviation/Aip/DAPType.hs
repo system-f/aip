@@ -55,7 +55,7 @@ instance ToJSON aerodrome => ToJSON (DAPType aerodrome) where
   toJSON (AeroProcChartsTOCDAP x) =
     object ["AeroProcChartsTOCDAP" .= toJSON x]
 
-class AsDAPType a where
+class ManyDAPType a => AsDAPType a where
   _DAPType ::
     Prism (a aerodrome) (a aerodrome') (DAPType aerodrome) (DAPType aerodrome')
   default _DAPType ::

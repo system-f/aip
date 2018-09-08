@@ -79,7 +79,7 @@ instance Ixed DAPDocs where
   ix i =
     _Wrapped . ix i
 
-class AsDAPDocs a where
+class ManyDAPDocs a => AsDAPDocs a where
   _DAPDocs ::
     Prism' a DAPDocs
   default _DAPDocs ::

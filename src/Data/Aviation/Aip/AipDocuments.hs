@@ -92,7 +92,7 @@ instance Ixed (AipDocuments book charts sup_aic dap ersa) where
   ix i =
     _Wrapped . ix i
 
-class AsAipDocuments a where
+class ManyAipDocuments a => AsAipDocuments a where
   _AipDocuments ::
     Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocuments book charts sup_aic dap ersa) (AipDocuments book' charts' sup_aic' dap' ersa')
   default _AipDocuments ::

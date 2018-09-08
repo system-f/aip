@@ -79,7 +79,7 @@ instance Ixed ListItemLinks1 where
   ix i =
     _Wrapped . ix i
 
-class AsListItemLinks1 a where
+class ManyListItemLinks1 a => AsListItemLinks1 a where
   _ListItemLinks1 ::
     Prism' a ListItemLinks1
   default _ListItemLinks1 ::

@@ -41,7 +41,7 @@ instance ToJSON DAPEntry where
   toJSON (DAPEntry u txt date amendment) =
     object ["href" .= u, "txt" .= txt, "date" .= date, "amendment" .= amendment]
 
-class AsDAPEntry a where
+class ManyDAPEntry a => AsDAPEntry a where
   _DAPEntry ::
     Prism' a DAPEntry
   default _DAPEntry ::

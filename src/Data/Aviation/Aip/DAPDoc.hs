@@ -38,7 +38,7 @@ instance ToJSON DAPDoc where
   toJSON (DAPDoc typ u entries) =
     object ["type" .= typ, "href" .= u, "entries" .= entries]
 
-class AsDAPDoc a where
+class ManyDAPDoc a => AsDAPDoc a where
   _DAPDoc ::
     Prism' a DAPDoc
   default _DAPDoc ::

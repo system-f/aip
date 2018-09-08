@@ -69,7 +69,7 @@ type AipDocument1 =
 type AipDocument2 =
   AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa
 
-class AsAipDocument a where
+class ManyAipDocument a => AsAipDocument a where
   _AipDocument ::
     Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
   default _AipDocument ::

@@ -34,7 +34,7 @@ instance ToJSON SHA1 where
   toJSON (SHA1 (Word160 b0 b1 b2 b3 b4)) =
     toJSON (b0, b1, b2, b3, b4)
 
-class AsSHA1 a where
+class ManySHA1 a => AsSHA1 a where
   _SHA1 ::
     Prism' a SHA1
   default _SHA1 ::

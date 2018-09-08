@@ -54,7 +54,7 @@ instance ToJSON AipRecords where
   toJSON (AipRecords s r) =
     object ["sha1" .= s, "aiprecords" .= r]
 
-class AsAipRecords a where
+class ManyAipRecords a => AsAipRecords a where
   _AipRecords ::
     Prism' a AipRecords
   default _AipRecords ::

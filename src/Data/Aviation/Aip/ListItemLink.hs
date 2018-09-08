@@ -35,7 +35,7 @@ instance ToJSON ListItemLink where
   toJSON (ListItemLink u t) =
     object ["href" .= u, "txt" .= t]
 
-class AsListItemLink a where
+class ManyListItemLink a => AsListItemLink a where
   _ListItemLink ::
     Prism' a ListItemLink
   default _ListItemLink ::

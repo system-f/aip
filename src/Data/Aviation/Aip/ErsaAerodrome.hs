@@ -36,7 +36,7 @@ instance ToJSON ErsaAerodrome where
   toJSON (ErsaAerodrome aerodrome fac rds) =
     object ["aerodrome" .= aerodrome, "fac_href" .= fac, "rds_href" .= rds]
 
-class AsErsaAerodrome a where
+class ManyErsaAerodrome a => AsErsaAerodrome a where
   _ErsaAerodrome ::
     Prism' a ErsaAerodrome
   default _ErsaAerodrome ::

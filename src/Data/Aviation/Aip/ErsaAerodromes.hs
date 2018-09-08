@@ -79,7 +79,7 @@ instance Ixed ErsaAerodromes where
   ix i =
     _Wrapped . ix i
 
-class AsErsaAerodromes a where
+class ManyErsaAerodromes a => AsErsaAerodromes a where
   _ErsaAerodromes ::
     Prism' a ErsaAerodromes
   default _ErsaAerodromes ::

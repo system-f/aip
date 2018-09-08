@@ -79,7 +79,7 @@ instance Ixed Aip_SUP_and_AICs where
   ix i =
     _Wrapped . ix i
 
-class AsAip_SUP_and_AICs a where
+class ManyAip_SUP_and_AICs a => AsAip_SUP_and_AICs a where
   _Aip_SUP_and_AICs ::
     Prism' a Aip_SUP_and_AICs
   default _Aip_SUP_and_AICs ::

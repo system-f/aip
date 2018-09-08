@@ -48,7 +48,7 @@ instance ToJSON Ersa where
   toJSON (Ersa links aerodromes complete) =
     object ["links" .= links, "aerodromes" .= aerodromes, "complete" .= complete]
 
-class AsErsa a where
+class ManyErsa a => AsErsa a where
   _Ersa ::
     Prism' a Ersa
   default _Ersa ::

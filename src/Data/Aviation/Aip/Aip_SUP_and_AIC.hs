@@ -43,7 +43,7 @@ instance ToJSON Aip_SUP_and_AIC where
   toJSON (Aip_SUP_and_AIC docnum u title pubdate effdate) =
     object ["docnum" .= docnum, "href" .= u, "title" .= title, "pubdate" .= pubdate, "effdate" .= effdate]
 
-class AsAip_SUP_and_AIC a where
+class ManyAip_SUP_and_AIC a => AsAip_SUP_and_AIC a where
   _Aip_SUP_and_AIC ::
     Prism' a Aip_SUP_and_AIC
   default _Aip_SUP_and_AIC ::

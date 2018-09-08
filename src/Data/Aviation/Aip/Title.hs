@@ -77,7 +77,7 @@ instance Wrapped Title where
 instance Title ~ a =>
   Rewrapped Title a
 
-class AsTitle a where
+class ManyTitle a => AsTitle a where
   _Title ::
     Prism' a Title
   default _Title ::
