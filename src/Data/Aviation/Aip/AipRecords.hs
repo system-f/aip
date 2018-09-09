@@ -28,6 +28,7 @@ import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
+import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
 import Control.Monad.IO.Class(liftIO)
 import Papa hiding ((.=))
@@ -155,28 +156,36 @@ getAipRecords cch dir =
                     do  p <- getPermissions c
                         if readable p
                           then
-                            decodeFileStrict c :: IO (Maybe (AipRecords))
+                            do  aiplog "reading aip contents cache"
+                                decodeFileStrict c :: IO (Maybe (AipRecords))
                           else
-                            pure Nothing
+                            do  aiplog "aip contents cache no read permission"
+                                pure Nothing
                   else
-                    pure Nothing
+                    do  aiplog "aip contents cache unreadable"
+                        pure Nothing
           else
-            pure Nothing
+            do  aiplog "configured for no read aip contents cache"
+                pure Nothing
 
       writeCache z rs =
         when (isWriteCache cch) $
-          do  createDirectoryIfMissing True (takeDirectory z)
+          do  aiplog "writing aip contents cache"
+              createDirectoryIfMissing True (takeDirectory z)
               let conf = defConfig { confIndent = Spaces 2 }
               LazyByteString.writeFile z (encodePretty' conf rs)
       trimSpaces =
           dropWhile isSpace
-  in  do  c <- requestAipContents
+  in  do  c <- requestAipContents          
           let h = hash (UTF8.encode c)
-          let z = dir </> hashHex h ".json"
+          let h' = hashHex h
+          aiplog ("aip contents, sha1: " ++ h' "")
+          let z = dir </> h' ".json"
           r <- liftIO $ readCache z
           case r of
             Just v ->
-              pure v
+              do  aiplog "using and returning aip contents cache"
+                  pure v
             Nothing ->
               let traverseAipDocuments ::
                     TagTreePos String
@@ -211,6 +220,7 @@ getAipRecords cch dir =
               in  do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
                       q <- AipDocuments <$> traverse runAipDocument a
                       t <- liftIO getCurrentTime
+                      aiplog ("traverse aip records at time " ++ show t)
                       let rs = AipRecords h (AipRecord t q :| [])
                       liftIO $ writeCache z rs
                       pure rs

@@ -12,6 +12,8 @@ module Data.Aviation.Aip.SHA1(
 , IsSHA1(..)      
 , hash
 , hashHex
+, showsHash
+, showHash
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
@@ -129,3 +131,17 @@ hashHex ::
   -> ShowS
 hashHex (SHA1 x) =
   showHex (SHA1.toInteger x)
+
+showsHash ::
+  HasSHA1 s =>
+  s
+  -> ShowS
+showsHash x =
+  hashHex (x ^. sha1)
+
+showHash ::
+  HasSHA1 s =>
+  s
+  -> String
+showHash x =
+  showsHash x ""

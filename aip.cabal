@@ -53,6 +53,7 @@ library
                     , iso8601-time
                     , aeson-pretty
                     , exceptions
+                    , unix
 
   ghc-options:
                     -Wall
@@ -90,6 +91,7 @@ library
                     Data.Aviation.Aip.ListItemLink
                     Data.Aviation.Aip.ListItemLinks
                     Data.Aviation.Aip.ListItemLinks1
+                    Data.Aviation.Aip.Log
                     Data.Aviation.Aip.SHA1
                     Data.Aviation.Aip.Title
                     Data.Aviation.Aip.Txt
@@ -130,6 +132,7 @@ executable          aip
                     , iso8601-time
                     , aeson-pretty
                     , exceptions
+                    , unix
                     
   ghc-options:
                     -Wall
