@@ -15,7 +15,7 @@ module Data.Aviation.Aip.DAPDoc(
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.DAPType(DAPType)
-import Data.Aviation.Aip.DAPEntries(DAPEntries)
+import Data.Aviation.Aip.DAPEntries(DAPEntries, FoldDAPEntries(_FoldDAPEntries), GetDAPEntries, SetDAPEntries, ManyDAPEntries(_ManyDAPEntries), HasDAPEntries(dapEntries))
 import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Papa hiding ((.=))
 
@@ -130,3 +130,17 @@ instance FoldHref DAPDoc where
 instance ManyHref DAPDoc where
   _ManyHref f (DAPDoc typ u entries) =
     DAPDoc <$> pure typ <*> f u <*> _ManyHref f entries
+
+----
+
+instance FoldDAPEntries DAPDoc where
+  _FoldDAPEntries =
+    dapEntries
+instance GetDAPEntries DAPDoc where
+instance SetDAPEntries DAPDoc where
+instance ManyDAPEntries DAPDoc where
+  _ManyDAPEntries =
+    dapEntries
+instance HasDAPEntries DAPDoc where
+  dapEntries k (DAPDoc typ u entries) =
+    fmap (\entries' -> DAPDoc typ u entries') (k entries)

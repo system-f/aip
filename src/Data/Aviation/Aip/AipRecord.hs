@@ -11,23 +11,19 @@ module Data.Aviation.Aip.AipRecord(
 , ManyAipRecord(..)
 , HasAipRecord(..)
 , IsAipRecord(..)    
+, aipRecordAipDocuments
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
-import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs)
-import Data.Aviation.Aip.AipDocuments(AipDocuments)
-import Data.Aviation.Aip.DAPDocs(DAPDocs)
-import Data.Aviation.Aip.Ersa(Ersa)
+import Data.Aviation.Aip.AipDocuments(AipDocuments(AipDocuments), AipDocuments2)
 import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
-import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
-import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1)
 import Data.Time(UTCTime)
 import Papa hiding ((.=))
 
 data AipRecord =
   AipRecord
     UTCTime
-    (AipDocuments ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa)
+    AipDocuments2
   deriving (Eq, Show)
 
 instance FromJSON AipRecord where
@@ -135,3 +131,9 @@ instance FoldHref AipRecord where
 instance ManyHref AipRecord where
   _ManyHref f (AipRecord t p) =
     AipRecord <$> pure t <*> _ManyHref f p
+
+aipRecordAipDocuments ::
+  Lens' AipRecord AipDocuments2
+aipRecordAipDocuments k (AipRecord t p) =
+  fmap (\p' -> AipRecord t p') (k p)
+

@@ -12,6 +12,7 @@ module Data.Aviation.Aip.AipRecords(
 , HasAipRecords(..)
 , IsAipRecords(..)  
 , getAipRecords
+, aipRecords1
 ) where
 
 import Codec.Binary.UTF8.String as UTF8(encode)
@@ -162,7 +163,7 @@ getAipRecords cch dir =
                             do  aiplog "aip contents cache no read permission"
                                 pure Nothing
                   else
-                    do  aiplog "aip contents cache unreadable"
+                    do  aiplog "aip contents cache not exists"
                         pure Nothing
           else
             do  aiplog "configured for no read aip contents cache"
@@ -261,3 +262,8 @@ instance SetSHA1 AipRecords where
 instance HasSHA1 AipRecords where
   sha1 k (AipRecords s r) =
     fmap (\s' -> AipRecords s' r) (k s)
+
+aipRecords1 ::
+  Lens' AipRecords (NonEmpty AipRecord)
+aipRecords1 k (AipRecords s r) =
+  fmap (\r' -> AipRecords s r') (k r)

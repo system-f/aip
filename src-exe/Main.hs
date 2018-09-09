@@ -91,6 +91,57 @@ run cch dir =
                 liftIO $ removeDirectoryRecursive h)
           pure x
 
+test =
+  runExceptT $
+    do  x <- getAipRecords ReadWriteCache "/tmp/abc"
+        let r = toListOf blahAip_Summary_SUP_AIC x
+        liftIO $ putStrLn (show r)
+
+blah1 :: Lens' AipRecords (NonEmpty AipRecord)
+blah1 = aipRecords1
+
+blah2 :: Traversal' AipRecords AipRecord
+blah2 = blah1 . traverse
+
+blah3 :: Traversal' AipRecords AipDocuments2
+blah3 = blah2 . aipRecordAipDocuments
+
+blah4 :: Traversal' AipRecords (AipDocument ListItemLinks ListItemLinks1 Aip_SUP_and_AICs DAPDocs Ersa)
+blah4 = blah3 . _Wrapped . traverse
+
+blah_Aip_Book :: Traversal' AipRecords Href -- (/aip/)current/aip
+blah_Aip_Book = blah4 . _Aip_Book . _3 . _Wrapped . traverse . href
+
+blah_Aip_Charts :: Traversal' AipRecords Href -- /aip/current/aipchart
+blah_Aip_Charts = blah4 . _Aip_Charts . _3 . _Wrapped . traverse . neTail . traverse . href
+
+blah_Aip_DAP :: Traversal' AipRecords Href -- /aip/current/dap
+blah_Aip_DAP = blah4 . _Aip_DAP . _3 . _Wrapped . traverse . dapEntries . _Wrapped . traverse . href
+
+blah_Aip_ERSA :: Traversal' AipRecords Href -- /aip/current/ersa
+blah_Aip_ERSA = blah4 . _Aip_ERSA . _3 . _ManyHref
+
+blah_Aip_SUP_AIC :: Traversal' AipRecords Href -- /aip/current/sup
+blah_Aip_SUP_AIC = blah4 . _Aip_SUP_AIC . _2 . _Wrapped . traverse . href
+
+blahAip_Summary_SUP_AIC :: Traversal' AipRecords Href -- (/aip/)current/SUP_AIP_Summary
+blahAip_Summary_SUP_AIC = blah4 . _Aip_Summary_SUP_AIC . _1
+
+-- belongs elsewhere
+neTail ::
+  Lens' (NonEmpty a) [a]
+neTail k (h :| t) =
+  fmap (\t' -> h :| t') (k t)
+
+
+{-
+
+aipRecordAipDocuments ::
+  Lens' AipRecord AipDocuments2
+-}
+
+undefined = undefined
+
 linkDocumentWithoutDate ::
   FilePath
   -> Href

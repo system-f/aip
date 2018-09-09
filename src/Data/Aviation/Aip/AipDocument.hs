@@ -77,7 +77,191 @@ class ManyAipDocument a => AsAipDocument a where
     Prism (a book charts sup_aic dap ersa) (a book' charts' sup_aic' dap' ersa') (AipDocument book charts sup_aic dap ersa) (AipDocument book' charts' sup_aic' dap' ersa')
   _AipDocument =
     _IsAipDocument
-    
+  _Aip_Book ::
+    Prism (a book charts sup_aic dap ersa) (a book' charts sup_aic dap ersa) (Href, AipDate, book) (Href, AipDate, book')
+  _Aip_Book =
+    _AipDocument .
+    prism
+        (\(u, t, x) -> Aip_Book u t x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Right (u, t, x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_Charts ::
+    Prism (a book charts sup_aic dap ersa) (a book charts' sup_aic dap ersa) (Href, AipDate, charts) (Href, AipDate, charts')
+  _Aip_Charts =
+    _AipDocument .
+    prism
+        (\(u, t, x) -> Aip_Charts u t x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Right (u, t, x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_SUP_AIC ::
+    Prism (a book charts sup_aic dap ersa) (a book charts sup_aic' dap ersa) (Href, sup_aic) (Href, sup_aic')
+  _Aip_SUP_AIC =
+    _AipDocument .
+    prism
+        (\(u, x) -> Aip_SUP_AIC u x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Right (u, x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_Summary_SUP_AIC ::
+    Prism (a book charts sup_aic dap ersa) (a book charts sup_aic dap ersa) (Href, AipDate) (Href, AipDate)
+  _Aip_Summary_SUP_AIC =
+    _AipDocument .
+    prism
+        (\(u, x) -> Aip_Summary_SUP_AIC u x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Right (u, x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_DAP ::
+    Prism (a book charts sup_aic dap ersa) (a book charts sup_aic dap' ersa) (Href, AipDate, dap) (Href, AipDate, dap')
+  _Aip_DAP =
+    _AipDocument .
+    prism
+        (\(u, t, x) -> Aip_DAP u t x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Right (u, t, x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_DAH ::
+    Prism (a book charts sup_aic dap ersa) (a book charts sup_aic dap ersa) (Href, AipDate) (Href, AipDate)
+  _Aip_DAH =
+    _AipDocument .
+    prism
+        (\(u, x) -> Aip_DAH u x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Right (u, x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_ERSA ::
+    Prism (a book charts sup_aic dap ersa) (a book charts sup_aic dap ersa') (Href, AipDate, ersa) (Href, AipDate, ersa')
+  _Aip_ERSA =
+    _AipDocument .
+    prism
+        (\(u, t, x) -> Aip_ERSA u t x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Right (u, t, x)
+                  Aip_AandB_Charts x ->
+                    Left (Aip_AandB_Charts x))
+  _Aip_AandB_Charts ::
+    Prism (a book charts sup_aic dap ersa) (a book charts sup_aic dap ersa) Href Href
+  _Aip_AandB_Charts =
+    _AipDocument .
+    prism
+        (\x -> Aip_AandB_Charts x)
+        (\a ->  case a of
+                  Aip_Book u t x ->
+                    Left (Aip_Book u t x)
+                  Aip_Charts u t x ->
+                    Left (Aip_Charts u t x)
+                  Aip_SUP_AIC u x ->
+                    Left (Aip_SUP_AIC u x)
+                  Aip_Summary_SUP_AIC u x ->
+                    Left (Aip_Summary_SUP_AIC u x)
+                  Aip_DAP u t x ->
+                    Left (Aip_DAP u t x)
+                  Aip_DAH u x ->
+                    Left (Aip_DAH u x)
+                  Aip_ERSA u t x ->
+                    Left (Aip_ERSA u t x)
+                  Aip_AandB_Charts x ->
+                    Right x)
+
 instance AsAipDocument AipDocument where
   _AipDocument =
     id
