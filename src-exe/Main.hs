@@ -131,6 +131,7 @@ blahAip_Summary_SUP_AIC = blah4 . _Aip_Summary_SUP_AIC . _1
 neTail ::
   Lens' (NonEmpty a) [a]
 neTail k (h :| t) =
+--  _Wrapped . _2 
   fmap (\t' -> h :| t') (k t)
 
 
@@ -199,6 +200,9 @@ removeDateFromFilename p =
 {- todo
 
 * tar download
+* move symlinks to their own directory
+* crop pdf files with pdfcrop --margins
+* convert pdf to ps with pdftops
 * command line args
 * tidy up cabal/nix
 * write README of general flow
