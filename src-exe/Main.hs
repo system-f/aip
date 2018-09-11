@@ -26,6 +26,7 @@ main =
       case e of
         Left e' ->
           aiplog ("network or HTTP error " ++ show e')
+          -- exit code
         Right r ->
           putStrLn (show r)
 
