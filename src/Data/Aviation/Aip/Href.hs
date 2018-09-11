@@ -14,6 +14,7 @@ module Data.Aviation.Aip.Href(
 , HasHref(..)
 , IsHref(..)
 , dropHrefFile
+, aipPrefix
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
@@ -199,3 +200,10 @@ dropHrefFile ::
   -> Href
 dropHrefFile =
   (_Wrapped %~ reverse . dropWhile (/= '/') . reverse)
+
+aipPrefix ::
+  ManyHref s =>
+  s
+  -> s
+aipPrefix =
+  _ManyHref . _Wrapped %~ let p = "/aip/" in bool <$> (p ++) <*> id <*> isPrefixOf p

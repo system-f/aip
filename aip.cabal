@@ -47,14 +47,10 @@ library
                     , utf8-string
                     , Crypto
                     , aeson
-                    , vector
                     , unordered-containers
-                    , text
-                    , iso8601-time
                     , aeson-pretty
                     , exceptions
-                    , unix
-
+                    
   ghc-options:
                     -Wall
 
@@ -126,13 +122,9 @@ executable          aip
                     , utf8-string
                     , Crypto
                     , aeson
-                    , vector
                     , unordered-containers
-                    , text
-                    , iso8601-time
                     , aeson-pretty
                     , exceptions
-                    , unix
                     
   ghc-options:
                     -Wall
