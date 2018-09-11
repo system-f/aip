@@ -1,8 +1,9 @@
-{ mkDerivation, aeson, base, bytestring, checkers, Crypto, digit
-, directory, exitcode, filepath, HTTP, lens, network-uri, papa
-, parsec, parsers, process, QuickCheck, stdenv, tagsoup
-, tagsoup-selection, tasty, tasty-hunit, tasty-quickcheck, time
-, transformers, utf8-string, vector, waargonaut
+{ mkDerivation, aeson, aeson-pretty, base, bytestring, checkers
+, Crypto, digit, directory, exceptions, exitcode, filepath, HTTP
+, iso8601-time, lens, network-uri, papa, parsec, parsers, process
+, QuickCheck, stdenv, tagsoup, tagsoup-selection, tasty
+, tasty-hunit, tasty-quickcheck, text, time, transformers, unix
+, unordered-containers, utf8-string, vector
 }:
 mkDerivation {
   pname = "aip";
@@ -11,14 +12,16 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring Crypto digit directory filepath HTTP lens
-    network-uri papa parsec parsers tagsoup tagsoup-selection
-    transformers utf8-string vector waargonaut
+    aeson aeson-pretty base bytestring Crypto digit directory
+    exceptions filepath HTTP iso8601-time lens network-uri papa parsec
+    parsers tagsoup tagsoup-selection text time transformers unix
+    unordered-containers utf8-string vector
   ];
   executableHaskellDepends = [
-    aeson base bytestring Crypto digit directory exitcode filepath HTTP
-    lens network-uri papa parsec parsers process tagsoup
-    tagsoup-selection time transformers utf8-string vector waargonaut
+    aeson aeson-pretty base bytestring Crypto digit directory
+    exceptions exitcode filepath HTTP iso8601-time lens network-uri
+    papa parsec parsers process tagsoup tagsoup-selection text time
+    transformers unix unordered-containers utf8-string vector
   ];
   testHaskellDepends = [
     base checkers lens QuickCheck tasty tasty-hunit tasty-quickcheck
