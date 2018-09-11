@@ -113,7 +113,7 @@ blah_Aip_Book :: Traversal' AipRecords Href -- (/aip/)current/aip
 blah_Aip_Book = blah4 . _Aip_Book . _3 . _Wrapped . traverse . href
 
 blah_Aip_Charts :: Traversal' AipRecords Href -- /aip/current/aipchart
-blah_Aip_Charts = blah4 . _Aip_Charts . _3 . _Wrapped . traverse . neTail . traverse . href
+blah_Aip_Charts = blah4 . _Aip_Charts . _3 . _Wrapped . traverse . _Wrapped . _2 . traverse . href
 
 blah_Aip_DAP :: Traversal' AipRecords Href -- /aip/current/dap
 blah_Aip_DAP = blah4 . _Aip_DAP . _3 . _Wrapped . traverse . dapEntries . _Wrapped . traverse . href
@@ -126,20 +126,6 @@ blah_Aip_SUP_AIC = blah4 . _Aip_SUP_AIC . _2 . _Wrapped . traverse . href
 
 blahAip_Summary_SUP_AIC :: Traversal' AipRecords Href -- (/aip/)current/SUP_AIP_Summary
 blahAip_Summary_SUP_AIC = blah4 . _Aip_Summary_SUP_AIC . _1
-
--- belongs elsewhere
-neTail ::
-  Lens' (NonEmpty a) [a]
-neTail k (h :| t) =
---  _Wrapped . _2 
-  fmap (\t' -> h :| t') (k t)
-
-
-{-
-
-aipRecordAipDocuments ::
-  Lens' AipRecord AipDocuments2
--}
 
 undefined = undefined
 

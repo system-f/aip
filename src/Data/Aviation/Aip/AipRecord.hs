@@ -15,7 +15,7 @@ module Data.Aviation.Aip.AipRecord(
 ) where
 
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
-import Data.Aviation.Aip.AipDocuments(AipDocuments(AipDocuments), AipDocuments2)
+import Data.Aviation.Aip.AipDocuments(AipDocuments2)
 import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Time(UTCTime)
 import Papa hiding ((.=))
