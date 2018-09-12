@@ -125,9 +125,10 @@ executable          aip
                     , unordered-containers
                     , aeson-pretty
                     , exceptions
+                    , optparse-applicative >= 0.13.2  && < 0.15
                     
   ghc-options:
-                    -Wall
+                    -Wall -ddump-splices
 
   default-extensions:
                     NoImplicitPrelude
