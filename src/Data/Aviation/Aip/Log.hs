@@ -2,6 +2,7 @@
 
 module Data.Aviation.Aip.Log(
   aiplog
+, aiplog'
 ) where
 
 import Control.Monad.IO.Class(MonadIO(liftIO))
@@ -13,4 +14,10 @@ aiplog ::
   String
   -> f ()
 aiplog =
-  liftIO . hPutStrLn stderr
+  liftIO . aiplog'
+
+aiplog' ::
+  String
+  -> IO ()
+aiplog' =
+  hPutStrLn stderr

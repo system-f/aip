@@ -18,8 +18,9 @@ import Control.Monad.IO.Class(liftIO)
 import Network.HTTP(HandleStream, getAuth, openStream, host, normalizeRequest, defaultNormalizeRequestOptions, close)
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
+import Data.Aviation.Aip.AipCon(AipCon(AipCon))
 import Data.Aviation.Aip.Log(aiplog)
-import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx), AipConn)
+import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
 import Data.Aviation.Aip.Href(Href(Href))
 import Network.HTTP(HStream, Request, RequestMethod(GET, POST), mkRequest, setRequestBody, simpleHTTP, simpleHTTP_, rspCode, rspBody)
 import Network.BufferType(BufferType)
@@ -55,8 +56,9 @@ aipRequestMethod m (Href s) z =
 doRequest ::
   HStream a =>
   Request a
-  -> ExceptT ConnErrorHttp4xx IO a
+  -> AipCon a
 doRequest r =
+  AipCon . const .
   ExceptT $
     do  x <- simpleHTTP r
         pure $
@@ -74,8 +76,9 @@ doRequest' ::
   HStream a =>
   Request a
   -> HandleStream a
-  -> ExceptT ConnErrorHttp4xx IO a
+  -> AipCon a
 doRequest' r h =
+  AipCon . const .
   ExceptT $
     do  x <- simpleHTTP_ h r
         pure $
@@ -93,7 +96,7 @@ doGetRequest ::
   HStream a =>
   Href
   -> String
-  -> ExceptT ConnErrorHttp4xx IO a
+  -> AipCon a
 doGetRequest s z =
   doRequest (aipRequestGet s z)
 
@@ -101,12 +104,12 @@ doPostRequest ::
   HStream a =>
   Href
   -> String
-  -> ExceptT ConnErrorHttp4xx IO a
+  -> AipCon a
 doPostRequest s z =
   doRequest (aipRequestPost s z)
 
 requestAipContents ::
-  ExceptT ConnErrorHttp4xx IO String
+  AipCon String
 requestAipContents =
   let r = setRequestBody
             (aipRequestPost (Href "aip.asp") "?pg=10")
@@ -116,7 +119,7 @@ requestAipContents =
 downloadHref ::
   FilePath
   -> Href
-  -> AipConn FilePath
+  -> AipCon FilePath
 downloadHref d hf =
   do  let q = aipRequestGet hf ""
       aiplog ("making request for aip document " ++ show q)
@@ -127,10 +130,9 @@ downloadHref d hf =
       let (j, k) = splitFileName (hf ^. _Wrapped)
       let ot = d </> dropWhile isPathSeparator j
       aiplog ("output directory for aip document " ++ ot)
-      liftIO $
-        do  createDirectoryIfMissing True ot
-            let ot' = ot </> k
-            aiplog ("writing aip document " ++ ot')
-            LazyByteString.writeFile ot' r
-            close c
-            pure ot'
+      do  liftIO $ createDirectoryIfMissing True ot
+          let ot' = ot </> k
+          aiplog ("writing aip document " ++ ot')
+          liftIO $ LazyByteString.writeFile ot' r
+          liftIO $ close c
+          pure ot'

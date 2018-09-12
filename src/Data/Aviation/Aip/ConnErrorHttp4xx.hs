@@ -5,7 +5,6 @@
 
 module Data.Aviation.Aip.ConnErrorHttp4xx(
   ConnErrorHttp4xx(..)
-, AipConn
 , AsConnErrorHttp4xx(..)
 , FoldConnErrorHttp4xx(..)
 , GetConnErrorHttp4xx(..)
@@ -15,7 +14,6 @@ module Data.Aviation.Aip.ConnErrorHttp4xx(
 , IsConnErrorHttp4xx(..)
 ) where
 
-import Control.Monad.Trans.Except(ExceptT)
 import Network.Stream(ConnError)
 import Papa
 
@@ -23,9 +21,6 @@ data ConnErrorHttp4xx =
   IsConnError ConnError
   | Http4xx Int Int
   deriving (Eq, Show)
-
-type AipConn a =
-  ExceptT ConnErrorHttp4xx IO a
 
 class AsConnErrorHttp4xx a where
   _ConnErrorHttp4xx ::

@@ -22,11 +22,11 @@ import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
+import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
 import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord), FoldAipRecord, SetAipRecord, FoldAipRecord(_FoldAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
-import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.Log(aiplog)
@@ -143,22 +143,22 @@ instance ManyAipRecords () where
 getAipRecords ::
   Cache
   -> FilePath -- basedir
-  -> AipConn AipRecords
+  -> AipCon AipRecords
 getAipRecords cch dir =
   let readCache ::
         FilePath
-        -> IO (Maybe AipRecords)
+        -> AipCon (Maybe AipRecords)
       readCache c =
         if isReadOrWriteCache cch
           then
-            do  e <- doesFileExist c
+            do  e <- liftIO $ doesFileExist c
                 if e
                   then
-                    do  p <- getPermissions c
+                    do  p <- liftIO $ getPermissions c
                         if readable p
                           then
                             do  aiplog "reading aip contents cache"
-                                decodeFileStrict c :: IO (Maybe (AipRecords))
+                                liftIO $ decodeFileStrict c :: AipCon (Maybe (AipRecords))
                           else
                             do  aiplog "aip contents cache no read permission"
                                 pure Nothing
@@ -172,9 +172,9 @@ getAipRecords cch dir =
       writeCache z rs =
         when (isWriteCache cch) $
           do  aiplog "writing aip contents cache"
-              createDirectoryIfMissing True (takeDirectory z)
+              liftIO $ createDirectoryIfMissing True (takeDirectory z)
               let conf = defConfig { confIndent = Spaces 2 }
-              LazyByteString.writeFile z (encodePretty' conf rs)
+              liftIO $ LazyByteString.writeFile z (encodePretty' conf rs)
       trimSpaces =
           dropWhile isSpace
   in  do  c <- requestAipContents          
@@ -182,7 +182,7 @@ getAipRecords cch dir =
           let h' = hashHex h
           aiplog ("aip contents, sha1: " ++ h' "")
           let z = dir </> h' ".json"
-          r <- liftIO $ readCache z
+          r <- readCache z
           case r of
             Just v ->
               do  aiplog "using and returning aip contents cache"
@@ -223,7 +223,7 @@ getAipRecords cch dir =
                       t <- liftIO getCurrentTime
                       aiplog ("traverse aip records at time " ++ show t)
                       let rs = AipRecords h (AipRecord t q :| [])
-                      liftIO $ writeCache z rs
+                      writeCache z rs
                       pure rs
 
 ----

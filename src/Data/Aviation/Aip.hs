@@ -2,11 +2,14 @@ module Data.Aviation.Aip(
   module A
 ) where
 
+import Data.Aviation.Aip.AfterDownload as A
 import Data.Aviation.Aip.Aip_SUP_and_AIC as A
 import Data.Aviation.Aip.Aip_SUP_and_AICs as A
+import Data.Aviation.Aip.AipCon as A
 import Data.Aviation.Aip.AipDate as A
 import Data.Aviation.Aip.AipDocument as A
 import Data.Aviation.Aip.AipDocuments as A
+import Data.Aviation.Aip.AipOptions as A
 import Data.Aviation.Aip.AipRecord as A
 import Data.Aviation.Aip.AipRecords as A
 import Data.Aviation.Aip.Amendment as A

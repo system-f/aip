@@ -50,6 +50,7 @@ library
                     , unordered-containers
                     , aeson-pretty
                     , exceptions
+                    , optparse-applicative >= 0.13.2  && < 0.15
                     
   ghc-options:
                     -Wall
@@ -63,11 +64,14 @@ library
 
   exposed-modules:
                     Data.Aviation.Aip
+                    Data.Aviation.Aip.AfterDownload
                     Data.Aviation.Aip.Aip_SUP_and_AIC
                     Data.Aviation.Aip.Aip_SUP_and_AICs
+                    Data.Aviation.Aip.AipCon
                     Data.Aviation.Aip.AipDate
                     Data.Aviation.Aip.AipDocument
                     Data.Aviation.Aip.AipDocuments
+                    Data.Aviation.Aip.AipOptions
                     Data.Aviation.Aip.AipRecord
                     Data.Aviation.Aip.AipRecords
                     Data.Aviation.Aip.Amendment

@@ -25,9 +25,9 @@ import Control.Monad(fail, (>=>))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), Value(Object), object, (.=))
 import Data.Aviation.Aip.Aip_SUP_and_AIC(Aip_SUP_and_AIC(Aip_SUP_and_AIC))
 import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs(Aip_SUP_and_AICs))
+import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
 import Data.Aviation.Aip.Amendment(Amendment(Amendment))
-import Data.Aviation.Aip.ConnErrorHttp4xx(AipConn)
 import Data.Aviation.Aip.DAPType(DAPType', DAPType(SpecNotManTOCDAP, ChecklistTOCDAP, LegendInfoTablesTOCDAP, AeroProcChartsTOCDAP))
 import Data.Aviation.Aip.DAPEntries(DAPEntries(DAPEntries))
 import Data.Aviation.Aip.DAPEntry(DAPEntry(DAPEntry))
@@ -396,7 +396,7 @@ instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHr
 
 runBook ::
   AipDocument book charts sup_aic dap ersa
-  -> AipConn (AipDocument ListItemLinks charts sup_aic dap ersa)
+  -> AipCon (AipDocument ListItemLinks charts sup_aic dap ersa)
 runBook (Aip_Book u t _) =
   Aip_Book u t <$> traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u
 runBook (Aip_Charts u t x) =
@@ -416,7 +416,7 @@ runBook (Aip_AandB_Charts x) =
 
 runCharts ::
   AipDocument book charts sup_aic dap ersa
-  -> AipConn (AipDocument book ListItemLinks1 sup_aic dap ersa)
+  -> AipCon (AipDocument book ListItemLinks1 sup_aic dap ersa)
 runCharts (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runCharts (Aip_Charts u t _) =
@@ -440,7 +440,7 @@ runCharts (Aip_AandB_Charts x) =
 
 runSUP_AIC ::
   AipDocument book charts sup_aic dap ersa
-  -> AipConn (AipDocument book charts Aip_SUP_and_AICs dap ersa)
+  -> AipCon (AipDocument book charts Aip_SUP_and_AICs dap ersa)
 runSUP_AIC (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runSUP_AIC (Aip_Charts u t x) =
@@ -467,7 +467,7 @@ runSUP_AIC (Aip_AandB_Charts x) =
 
 runDAP ::
   AipDocument book charts sup_aic dap ersa
-  -> AipConn (AipDocument book charts sup_aic DAPDocs ersa)
+  -> AipCon (AipDocument book charts sup_aic DAPDocs ersa)
 runDAP (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runDAP (Aip_Charts u t x) =
@@ -478,7 +478,7 @@ runDAP (Aip_Summary_SUP_AIC u x) =
   pure (Aip_Summary_SUP_AIC u x)
 runDAP (Aip_DAP u t _) =
   let eachDAP ::
-        AipConn DAPDocs
+        AipCon DAPDocs
       eachDAP =
         let trimSpaces =
               dropWhile isSpace
@@ -516,7 +516,7 @@ runDAP (Aip_DAP u t _) =
         in  do  dap1 <- traverseAipHtmlRequestGet traverseDAP u
                 let ts ::
                       (DAPType', Href)
-                      -> AipConn [DAPDoc]
+                      -> AipCon [DAPDoc]
                     ts (t', u') =
                       let noaerodrome dt =
                             (\x -> [DAPDoc dt u' x]) <$> traverseAipHtmlRequestGet (traverseDAP2 u') u'
@@ -552,7 +552,7 @@ runDAP (Aip_AandB_Charts x) =
 
 runERSA ::
   AipDocument book charts sup_aic dap ersa
-  -> AipConn (AipDocument book charts sup_aic dap Ersa)
+  -> AipCon (AipDocument book charts sup_aic dap Ersa)
 runERSA (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runERSA (Aip_Charts u t x) =
@@ -566,14 +566,6 @@ runERSA (Aip_DAP u t x) =
 runERSA (Aip_DAH u x) =
   pure (Aip_DAH u x)
 runERSA (Aip_ERSA u t _) =
-  {-
-  <td>
-    
-    <a href="/aip/current/ersa/ersa_rds_index_16AUG2018.pdf">ERSA Complete</a>
-    
-    </td>
-  -}
-
   let traverseErsaAerodromes ::
         TagTreePos String
         -> ErsaAerodromes
@@ -607,7 +599,7 @@ runERSA (Aip_AandB_Charts x) =
 
 runAipDocument ::
   AipDocument book charts sup_aic dap ersa
-  -> AipConn AipDocument2
+  -> AipCon AipDocument2
 runAipDocument =
   runBook >=> runCharts >=> runSUP_AIC >=> runDAP >=> runERSA
 
@@ -632,6 +624,6 @@ traverseAipHtmlRequestGet ::
   (HStream str, Monoid a, Text.StringLike.StringLike str) =>
   (TagTreePos str -> a)
   -> Href
-  -> AipConn a
+  -> AipCon a
 traverseAipHtmlRequestGet k (Href u) =
   foldMap (traverseTree k . fromTagTree) . parseTree <$> doGetRequest (Href u) ""
