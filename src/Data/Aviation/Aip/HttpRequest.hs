@@ -18,7 +18,7 @@ import Control.Applicative(pure)
 import Control.Lens
 import Control.Monad.IO.Class(liftIO)
 import Network.HTTP(HandleStream, getAuth, openStream, host, normalizeRequest, defaultNormalizeRequestOptions, close)
-import qualified Data.ByteString.Lazy as LazyByteString(ByteString, writeFile)
+import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
 import Data.Aviation.Aip.AipCon(AipCon(AipCon))
 import Data.Aviation.Aip.Log(aiplog)
@@ -41,7 +41,6 @@ import Network.URI(URI(URI), URIAuth(URIAuth))
 import Prelude(Show(show))
 import System.Directory(createDirectoryIfMissing)
 import System.FilePath(FilePath, splitFileName, isPathSeparator, (</>))
-import System.IO(IO)
 
 aipRequestGet ::
   BufferType ty =>
@@ -147,23 +146,16 @@ downloadHref d hf =
       let ot = d </> dropWhile isPathSeparator j
       aiplog ("output directory for aip document " <> ot)
       do  liftIO $ createDirectoryIfMissing True ot
-          let ot' = ot </> k
+          let otw =
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+                    let repl '?' = '_'
+                        repl c = c
+                    in  repl <$> ot
+#else
+                    ot
+#endif                    
+          let ot' = otw </> k
           aiplog ("writing aip document " <> ot')
-          liftIO $ writeFile' ot' r
+          liftIO $ LazyByteString.writeFile ot' r
           liftIO $ close c
           pure ot'
-
-writeFile' ::
-  String
-  -> LazyByteString.ByteString
-  -> IO ()
-writeFile' x z =
-  let x' = 
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-            let repl '?' = '_'
-                repl c = c
-            in  repl <$> x
-#else
-            x
-#endif
-  in  LazyByteString.writeFile x' z
