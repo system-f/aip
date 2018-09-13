@@ -146,16 +146,16 @@ downloadHref d hf =
       let ot = d </> dropWhile isPathSeparator j
       aiplog ("output directory for aip document " <> ot)
       do  liftIO $ createDirectoryIfMissing True ot
+          let ot' = ot </> k
           let otw =
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
                     let repl '?' = '_'
                         repl ch = ch
-                    in  repl <$> ot
+                    in  repl <$> ot'
 #else
-                    ot
+                    ot'
 #endif                    
-          let ot' = otw </> k
-          aiplog ("writing aip document " <> ot')
-          liftIO $ LazyByteString.writeFile ot' r
+          aiplog ("writing aip document " <> otw)
+          liftIO $ LazyByteString.writeFile otw r
           liftIO $ close c
           pure ot'
