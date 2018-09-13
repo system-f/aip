@@ -27,7 +27,7 @@ import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
-import Data.Aviation.Aip.AfterDownload
+import Data.Aviation.Aip.AfterDownload(AfterDownload(AfterDownload), AfterDownloadAipCon)
 import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.SHA1(showHash)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
