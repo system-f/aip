@@ -13,27 +13,36 @@ module Data.Aviation.Aip.AipRecords(
 , IsAipRecords(..)  
 , getAipRecords
 , aipRecords1
+, run
 ) where
 
 import Codec.Binary.UTF8.String as UTF8(encode)
+import Control.Exception(IOException)
+import Control.Monad.Catch(MonadCatch(catch))
+import Control.Monad.IO.Class(liftIO)
+import Control.Monad.Trans.Except(runExceptT)
 import Data.Aeson(decodeFileStrict)
 import Data.Aeson.Encode.Pretty(confIndent, defConfig, Indent(Spaces), encodePretty')
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
+import Data.Aviation.Aip.AfterDownload
 import Data.Aviation.Aip.AipCon(AipCon)
+import Data.Aviation.Aip.SHA1(showHash)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
+import Data.Aviation.Aip.AipOptions(parserAipOptions, aipOptionLog, aipOptionCache, aipOptionOutputDirectory, aipOptionVerbose)
 import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord), FoldAipRecord, SetAipRecord, FoldAipRecord(_FoldAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
-import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
-import Data.Aviation.Aip.HttpRequest(requestAipContents)
-import Data.Aviation.Aip.Log(aiplog)
+import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), aipPrefix)
+import Data.Aviation.Aip.HttpRequest(requestAipContents, downloadHref)
+import Data.Aviation.Aip.Log(aiplog, aiplog')
 import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
-import Control.Monad.IO.Class(liftIO)
+import Options.Applicative(execParser, info, helper, fullDesc, header)
 import Papa hiding ((.=))
-import System.Directory(doesFileExist, getPermissions, readable, createDirectoryIfMissing)
+import System.Directory(doesDirectoryExist, doesFileExist, getPermissions, readable, createDirectoryIfMissing, removeDirectoryRecursive)
+import System.Exit(exitWith, ExitCode(ExitFailure))
 import System.FilePath(takeDirectory, (</>))
 import Text.HTML.TagSoup(Tag(TagText))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
@@ -207,9 +216,9 @@ getAipRecords cch dir =
                         li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText "Precision Approach Terrain Charts and Type A & Type B Obstacle Charts")]]) =
                           [Aip_AandB_Charts (Href hf)]
                         li (TagBranch "li" [] [TagBranch "a" [("href", hf)] [TagLeaf (TagText tx)]]) =
-                          let str = "Summary of SUP/AIC Current"
-                              (p, s) = splitAt (length str) tx
-                          in  if p == str then
+                          let st = "Summary of SUP/AIC Current"
+                              (p, s) = splitAt (length st) tx
+                          in  if p == st then
                                 [Aip_Summary_SUP_AIC (Href hf) (AipDate (trimSpaces s))]
                               else
                                 [] 
@@ -267,3 +276,46 @@ aipRecords1 ::
   Lens' AipRecords (NonEmpty AipRecord)
 aipRecords1 k (AipRecords s r) =
   fmap (\r' -> AipRecords s r') (k r)
+
+
+run ::
+  AfterDownloadAipCon a
+  -> IO ()
+run k =
+  let writeAip ::
+        AfterDownloadAipCon a
+        -> Cache
+        -> FilePath
+        -> AipCon AipRecords
+      writeAip (AfterDownload w) cch dir =
+        let catchIOException :: 
+              MonadCatch m =>
+              m a ->
+              (IOException -> m a)
+              -> m a
+            catchIOException =
+              catch
+        in  do  x <- getAipRecords cch dir
+                let h = dir </> showHash x
+                de <- liftIO $ doesDirectoryExist h
+                let dl = mapMOf_ _ManyHref (\c -> downloadHref h c >>= \z -> w z c) (aipPrefix x)
+                catchIOException (de `unless` dl) (\e ->
+                  do  aiplog ("IO Exception: " ++ show e)
+                      liftIO $ removeDirectoryRecursive h)
+                pure x
+      p =
+        execParser
+          (info (parserAipOptions <**> helper) (
+            fullDesc <>
+            header "aip 0.1.0 <http://www.airservicesaustralia.com/aip/aip.asp>"
+          )
+        )
+  in  do  opts <- p
+          let lg = (opts ^. aipOptionLog)
+          e <- runExceptT ((writeAip k (opts ^. aipOptionCache) (opts ^. aipOptionOutputDirectory) ^. _Wrapped) lg)
+          case e of
+            Left e' ->
+              do  when lg (aiplog' ("network or HTTP error " ++ show e'))
+                  exitWith (ExitFailure 1)
+            Right r ->
+              when (opts ^. aipOptionVerbose) (putStrLn (show r))

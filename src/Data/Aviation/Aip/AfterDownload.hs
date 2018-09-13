@@ -11,8 +11,8 @@ module Data.Aviation.Aip.AfterDownload(
 , AfterDownloadAipCon
 ) where
 
-import Data.Aviation.Aip.AipCon
-import Data.Aviation.Aip.Href
+import Data.Aviation.Aip.AipCon(AipCon)
+import Data.Aviation.Aip.Href(Href)
 import Papa
 
 newtype AfterDownload f a =

@@ -30,6 +30,9 @@ library
 
   build-depends:
                     base >= 4.8 && < 5
+                    , aeson >= 1.4.0.0 && < 1.5
+                    , aeson-pretty >= 0.8 && < 0.9
+                    , unordered-containers >= 0.2.9.0 && < 0.3
                     , HTTP >= 4000 && < 5000
                     , network-uri >= 2.6 && < 3
                     , tagsoup >= 0.13 && < 0.15
@@ -37,19 +40,15 @@ library
                     , transformers >= 0.5 && < 0.6
                     , parsers >= 0.12 && < 0.13
                     , parsec >= 3.1 && < 3.2
-                    , digit >= 0.5 && < 0.6
                     , bytestring >= 0.10 && < 0.11
                     , filepath >= 1.4 && < 1.5
                     , directory >= 1.3 && < 1.4
                     , lens >= 4 && < 5
                     , papa >= 0.3 && < 0.4
                     , time >= 1.6 && < 1.9
-                    , utf8-string
-                    , Crypto
-                    , aeson
-                    , unordered-containers
-                    , aeson-pretty
-                    , exceptions
+                    , utf8-string >= 1.0.1.1 && < 1.1
+                    , Crypto >= 4.2.5.1 && < 4.3
+                    , exceptions >= 0.10.0 && < 1
                     , optparse-applicative >= 0.13.2  && < 0.15
                     
   ghc-options:
@@ -107,29 +106,7 @@ executable          aip
   build-depends:
                     base >= 4.8 && < 5
                     , aip
-                    , HTTP >= 4000 && < 5000
-                    , network-uri >= 2.6 && < 3
-                    , tagsoup >= 0.13 && < 0.15
-                    , tagsoup-selection >= 0.1 && < 0.2
-                    , transformers >= 0.5 && < 0.6
-                    , parsers >= 0.12 && < 0.13
-                    , parsec >= 3.1 && < 3.2
-                    , digit >= 0.5 && < 0.6
-                    , bytestring >= 0.10 && < 0.11
-                    , filepath >= 1.4 && < 1.5
-                    , directory >= 1.3 && < 1.4
-                    , lens >= 4 && < 5
                     , papa >= 0.3 && < 0.4
-                    , time >= 1.6 && < 1.9
-                    , process >= 1.6 && < 2.0
-                    , exitcode >= 0.1.0.0 && < 1.0     
-                    , utf8-string
-                    , Crypto
-                    , aeson
-                    , unordered-containers
-                    , aeson-pretty
-                    , exceptions
-                    , optparse-applicative >= 0.13.2  && < 0.15
                     
   ghc-options:
                     -Wall -ddump-splices
