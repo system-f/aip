@@ -15,7 +15,7 @@ homepage:           https://github.com/qfpl/aip
 bug-reports:        https://github.com/qfpl/aip/issues
 cabal-version:      >= 1.10
 build-type:         Simple
-extra-source-files: changelog
+extra-source-files: changelog.md
 
 source-repository   head
   type:             git
