@@ -21,7 +21,10 @@ module Data.Aviation.Aip.AipDocument(
 , runAipDocument
 ) where
 
-import Control.Monad(fail, (>=>))
+import Control.Category((.), id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
+import Control.Monad(fail, (>=>), (>>=), join, mapM)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), Value(Object), object, (.=))
 import Data.Aviation.Aip.Aip_SUP_and_AIC(Aip_SUP_and_AIC(Aip_SUP_and_AIC))
 import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs(Aip_SUP_and_AICs))
@@ -44,9 +47,23 @@ import Data.Aviation.Aip.ErsaAerodrome(ErsaAerodrome(ErsaAerodrome))
 import Data.Aviation.Aip.ErsaAerodromes(ErsaAerodromes(ErsaAerodromes))
 import Data.Aviation.Aip.Title(Title(Title))
 import Data.Aviation.Aip.Txt(Txt(Txt))
+import Data.Bool(Bool(True))
+import Data.Char(isSpace)
+import Data.Either(Either(Left, Right))
+import Data.Eq(Eq)
+import Data.Foldable(foldMap)
+import Data.Function(($))
+import Data.Functor((<$>))
+import Data.List(isSuffixOf, dropWhile)
+import Data.List.NonEmpty(NonEmpty((:|)))
+import Data.Maybe(Maybe(Just, Nothing))
 import qualified Data.HashMap.Strict as HashMap(toList)
+import Data.Monoid(Monoid(mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Data.String(String)
 import Network.TCP(HStream)
-import Papa hiding ((.=))
+import Prelude(Show)
 import Text.HTML.TagSoup(Tag(TagText, TagOpen))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
 import Text.HTML.TagSoup.Tree.Zipper(TagTreePos(TagTreePos), fromTagTree, traverseTree)
@@ -420,7 +437,7 @@ runCharts ::
 runCharts (Aip_Book u t x) =
   pure (Aip_Book u t x)
 runCharts (Aip_Charts u t _) =
-  do  i <- traverseAipHtmlRequestGet (traverseListItems (const True)) u
+  do  i <- traverseAipHtmlRequestGet (traverseListItems (pure True)) u
       p <- traverse (\l@(ListItemLink u' _) ->
               do  n <- traverseAipHtmlRequestGet (traverseListItems (isSuffixOf ".pdf")) u'
                   pure (l :| n ^. _Wrapped)) (i ^. _Wrapped)
@@ -502,7 +519,7 @@ runDAP (Aip_DAP u t _) =
               -> TagTreePos String
               -> DAPEntries
             traverseDAP2 u' (TagTreePos (TagBranch "tr" [] [TagLeaf (TagText _),TagLeaf (TagOpen "td" _),TagLeaf (TagText _),TagBranch "td" _ [TagBranch "a" [("href",hf)] [TagLeaf (TagText tx)]],TagLeaf (TagText _),TagBranch "td" _ [TagLeaf (TagText date),TagBranch "span" _ [TagLeaf (TagText amend)]],TagLeaf (TagText _)]) _ _ _) =
-              DAPEntries [DAPEntry (dropHrefFile u' ++ Href hf) (Txt tx) (AipDate date) (Amendment (trimSpaces amend))]
+              DAPEntries [DAPEntry (dropHrefFile u' <> Href hf) (Txt tx) (AipDate date) (Amendment (trimSpaces amend))]
             traverseDAP2 _ _ =
               mempty
             traverseAeroProcChartsTOCDAP ::
@@ -541,7 +558,7 @@ runDAP (Aip_DAP u t _) =
                                         es x >>= \(s', e') ->
                                         pure (DAPDoc (AeroProcChartsTOCDAP s') u' e')
                                   pure docs
-                DAPDocs . concat <$> mapM ts dap1
+                DAPDocs . join <$> mapM ts dap1
   in  Aip_DAP u t <$> eachDAP
 runDAP (Aip_DAH u x) =
   pure (Aip_DAH u x)

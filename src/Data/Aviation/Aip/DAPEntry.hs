@@ -13,12 +13,19 @@ module Data.Aviation.Aip.DAPEntry(
 , IsDAPEntry(..)    
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDate(AipDate)
 import Data.Aviation.Aip.Amendment(Amendment)
 import Data.Aviation.Aip.Href(Href, SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), GetHref, HasHref(href))
 import Data.Aviation.Aip.Txt(Txt)
-import Papa hiding ((.=))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor(fmap, (<$>))
+import Data.Ord(Ord)
+import Prelude(Show)
 
 data DAPEntry =
   DAPEntry

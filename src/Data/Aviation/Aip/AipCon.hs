@@ -7,11 +7,17 @@ module Data.Aviation.Aip.AipCon(
   AipCon(..)
 ) where
 
+import Control.Category((.))
+import Control.Applicative(Applicative(pure, (<*>)))
+import Control.Lens
+import Control.Monad(Monad(return, (>>=)))
 import Control.Monad.Catch(MonadThrow(throwM), MonadCatch(catch))
 import Control.Monad.IO.Class(MonadIO(liftIO))
 import Control.Monad.Trans.Except(ExceptT)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx)
-import Papa
+import Data.Bool(Bool)
+import Data.Functor(Functor(fmap))
+import System.IO(IO)
 
 newtype AipCon a =
   AipCon (Bool -> ExceptT ConnErrorHttp4xx IO a)

@@ -14,10 +14,15 @@ module Data.Aviation.Aip.DAPType(
 , IsDAPType(..)    
 ) where
 
+import Control.Category(id)
+import Control.Lens hiding ((.=))
 import Control.Monad(fail)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), Value(Object), object, (.=))
+import Data.Eq(Eq)
+import Data.Functor((<$>))
 import qualified Data.HashMap.Strict as HashMap(toList)
-import Papa hiding ((.=))
+import Data.Ord(Ord)
+import Prelude(Show)
 
 data DAPType aerodrome =
   SpecNotManTOCDAP

@@ -15,10 +15,22 @@ module Data.Aviation.Aip.ListItemLinks1(
 , IsListItemLinks1(..)  
 ) where
 
+import Control.Category((.), id)
+import Control.Applicative(pure)
+import Control.Lens
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
 import Data.Aviation.Aip.Href(SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.ListItemLink(ListItemLink)
-import Papa
+import Data.Eq(Eq)
+import Data.Foldable(toList)
+import Data.Function(($))
+import Data.Functor((<$>))
+import Data.Int(Int)
+import Data.List.NonEmpty(NonEmpty)
+import Data.Monoid(Monoid(mappend, mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Prelude(Show)
 
 newtype ListItemLinks1 =
   ListItemLinks1

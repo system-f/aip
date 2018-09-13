@@ -12,8 +12,9 @@ module Data.Aviation.Aip.HttpRequest(
 , downloadHref
 ) where
 
-import System.Directory(createDirectoryIfMissing)
-import System.FilePath(splitFileName, isPathSeparator, (</>))
+import Control.Category((.))
+import Control.Applicative(pure)
+import Control.Lens
 import Control.Monad.IO.Class(liftIO)
 import Network.HTTP(HandleStream, getAuth, openStream, host, normalizeRequest, defaultNormalizeRequestOptions, close)
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
@@ -22,10 +23,20 @@ import Data.Aviation.Aip.AipCon(AipCon(AipCon))
 import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
 import Data.Aviation.Aip.Href(Href(Href))
+import Data.Bool(Bool(True), bool)
+import Data.Either(Either(Left, Right))
+import Data.Eq(Eq((==)))
+import Data.Function(($))
+import Data.List(isPrefixOf, dropWhile)
+import Data.Maybe(Maybe(Just))
+import Data.Semigroup(Semigroup((<>)))
+import Data.String(String)
 import Network.HTTP(HStream, Request, RequestMethod(GET, POST), mkRequest, setRequestBody, simpleHTTP, simpleHTTP_, rspCode, rspBody)
 import Network.BufferType(BufferType)
 import Network.URI(URI(URI), URIAuth(URIAuth))
-import Papa
+import Prelude(Show(show))
+import System.Directory(createDirectoryIfMissing)
+import System.FilePath(FilePath, splitFileName, isPathSeparator, (</>))
 
 aipRequestGet ::
   BufferType ty =>
@@ -50,7 +61,7 @@ aipRequestMethod ::
   -> String
   -> Request ty
 aipRequestMethod m (Href s) z =
-  let s' = bool ("/aip/" ++ s) s ("/aip/" `isPrefixOf` s)
+  let s' = bool ("/aip/" <> s) s ("/aip/" `isPrefixOf` s)
   in  mkRequest m (URI "http:" (Just (URIAuth "" "www.airservicesaustralia.com" "")) s' z "")
 
 doRequest ::
@@ -58,7 +69,7 @@ doRequest ::
   Request a
   -> AipCon a
 doRequest r =
-  AipCon . const .
+  AipCon . pure .
   ExceptT $
     do  x <- simpleHTTP r
         pure $
@@ -78,7 +89,7 @@ doRequest' ::
   -> HandleStream a
   -> AipCon a
 doRequest' r h =
-  AipCon . const .
+  AipCon . pure .
   ExceptT $
     do  x <- simpleHTTP_ h r
         pure $
@@ -122,17 +133,17 @@ downloadHref ::
   -> AipCon FilePath
 downloadHref d hf =
   do  let q = aipRequestGet hf ""
-      aiplog ("making request for aip document " ++ show q)
+      aiplog ("making request for aip document " <> show q)
       auth <- getAuth q
-      aiplog ("making request for aip document with auth " ++ show auth)
+      aiplog ("making request for aip document with auth " <> show auth)
       c <- liftIO $ openStream (host auth) 80
       r <- doRequest' (normalizeRequest defaultNormalizeRequestOptions q) c
       let (j, k) = splitFileName (hf ^. _Wrapped)
       let ot = d </> dropWhile isPathSeparator j
-      aiplog ("output directory for aip document " ++ ot)
+      aiplog ("output directory for aip document " <> ot)
       do  liftIO $ createDirectoryIfMissing True ot
           let ot' = ot </> k
-          aiplog ("writing aip document " ++ ot')
+          aiplog ("writing aip document " <> ot')
           liftIO $ LazyByteString.writeFile ot' r
           liftIO $ close c
           pure ot'

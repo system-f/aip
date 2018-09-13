@@ -14,11 +14,17 @@ module Data.Aviation.Aip.AipRecord(
 , aipRecordAipDocuments
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocuments(AipDocuments2)
 import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor(fmap, (<$>))
 import Data.Time(UTCTime)
-import Papa hiding ((.=))
+import Prelude(Show)
 
 data AipRecord =
   AipRecord

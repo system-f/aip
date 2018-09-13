@@ -17,8 +17,21 @@ module Data.Aviation.Aip.Href(
 , aipPrefix
 ) where
 
+import Control.Category((.), id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
-import Papa hiding ((.=))
+import Data.Bool(bool)
+import Data.Char(Char)
+import Data.Eq(Eq((/=)))
+import Data.Functor((<$>))
+import Data.Int(Int)
+import Data.List(reverse, dropWhile, isPrefixOf)
+import Data.Monoid(Monoid(mappend, mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Data.String(String)
+import Prelude(Show)
 
 newtype Href =
   Href
@@ -206,4 +219,4 @@ aipPrefix ::
   s
   -> s
 aipPrefix =
-  _ManyHref . _Wrapped %~ let p = "/aip/" in bool <$> (p ++) <*> id <*> isPrefixOf p
+  _ManyHref . _Wrapped %~ let p = "/aip/" in bool <$> (p <>) <*> id <*> isPrefixOf p

@@ -16,8 +16,12 @@ module Data.Aviation.Aip.AipRecords(
 , run
 ) where
 
+import Control.Category((.), id)
+import Control.Applicative(pure, (<*>), (<**>))
 import Codec.Binary.UTF8.String as UTF8(encode)
 import Control.Exception(IOException)
+import Control.Lens hiding ((.=))
+import Control.Monad((>>=), when, unless)
 import Control.Monad.Catch(MonadCatch(catch))
 import Control.Monad.IO.Class(liftIO)
 import Control.Monad.Trans.Except(runExceptT)
@@ -39,11 +43,25 @@ import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref
 import Data.Aviation.Aip.HttpRequest(requestAipContents, downloadHref)
 import Data.Aviation.Aip.Log(aiplog, aiplog')
 import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
+import Data.Bool(Bool(True))
+import Data.Char(isSpace)
+import Data.Either(Either(Left, Right))
+import Data.Eq(Eq((==)))
+import Data.Foldable(length, foldMap)
+import Data.Function(($))
+import Data.Functor(fmap, (<$>))
+import Data.List(dropWhile, splitAt)
+import Data.List.NonEmpty(NonEmpty((:|)))
+import Data.Maybe(Maybe(Just, Nothing))
+import Data.Monoid(Monoid(mempty))
+import Data.Semigroup(Semigroup((<>)))
+import Data.String(String)
 import Options.Applicative(execParser, info, helper, fullDesc, header)
-import Papa hiding ((.=))
+import Prelude(Show(show))
 import System.Directory(doesDirectoryExist, doesFileExist, getPermissions, readable, createDirectoryIfMissing, removeDirectoryRecursive)
 import System.Exit(exitWith, ExitCode(ExitFailure))
-import System.FilePath(takeDirectory, (</>))
+import System.FilePath(takeDirectory, (</>), FilePath)
+import System.IO(IO, putStrLn)
 import Text.HTML.TagSoup(Tag(TagText))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
 import Text.HTML.TagSoup.Tree.Zipper(TagTreePos(TagTreePos), fromTagTree, traverseTree)
@@ -189,7 +207,7 @@ getAipRecords cch dir =
   in  do  c <- requestAipContents          
           let h = hash (UTF8.encode c)
           let h' = hashHex h
-          aiplog ("aip contents, sha1: " ++ h' "")
+          aiplog ("aip contents, sha1: " <> h' "")
           let z = dir </> h' ".json"
           r <- readCache z
           case r of
@@ -230,7 +248,7 @@ getAipRecords cch dir =
               in  do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
                       q <- AipDocuments <$> traverse runAipDocument a
                       t <- liftIO getCurrentTime
-                      aiplog ("traverse aip records at time " ++ show t)
+                      aiplog ("traverse aip records at time " <> show t)
                       let rs = AipRecords h (AipRecord t q :| [])
                       writeCache z rs
                       pure rs
@@ -300,7 +318,7 @@ run k =
                 de <- liftIO $ doesDirectoryExist h
                 let dl = mapMOf_ _ManyHref (\c -> downloadHref h c >>= \z -> w z c) (aipPrefix x)
                 catchIOException (de `unless` dl) (\e ->
-                  do  aiplog ("IO Exception: " ++ show e)
+                  do  aiplog ("IO Exception: " <> show e)
                       liftIO $ removeDirectoryRecursive h)
                 pure x
       p =
@@ -315,7 +333,7 @@ run k =
           e <- runExceptT ((writeAip k (opts ^. aipOptionCache) (opts ^. aipOptionOutputDirectory) ^. _Wrapped) lg)
           case e of
             Left e' ->
-              do  when lg (aiplog' ("network or HTTP error " ++ show e'))
+              do  when lg (aiplog' ("network or HTTP error " <> show e'))
                   exitWith (ExitFailure 1)
             Right r ->
               when (opts ^. aipOptionVerbose) (putStrLn (show r))

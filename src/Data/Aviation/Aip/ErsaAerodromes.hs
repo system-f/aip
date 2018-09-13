@@ -15,10 +15,21 @@ module Data.Aviation.Aip.ErsaAerodromes(
 , IsErsaAerodromes(..)    
 ) where
 
+import Control.Category((.), id)
+import Control.Applicative(pure)
+import Control.Lens
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
+import Data.Eq(Eq)
+import Data.Foldable(toList)
+import Data.Function(($))
+import Data.Functor((<$>))
+import Data.Int(Int)
+import Data.Monoid(Monoid(mappend, mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Prelude(Show)
 import Data.Aviation.Aip.ErsaAerodrome(ErsaAerodrome)
 import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
-import Papa
 
 newtype ErsaAerodromes =
   ErsaAerodromes

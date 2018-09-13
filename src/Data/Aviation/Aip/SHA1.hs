@@ -16,12 +16,18 @@ module Data.Aviation.Aip.SHA1(
 , showHash
 ) where
 
+import Control.Category((.), id)
+import Control.Applicative(pure)
+import Control.Lens
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
 import Data.Digest.SHA1(Word160(Word160))
 import qualified Data.Digest.SHA1 as SHA1(hash, toInteger)
+import Data.Eq(Eq)
+import Data.Functor((<$>))
+import Data.String(String)
 import Data.Word(Word8)
 import Numeric(showHex)
-import Papa
+import Prelude(Show, ShowS)
 
 newtype SHA1 =
   SHA1

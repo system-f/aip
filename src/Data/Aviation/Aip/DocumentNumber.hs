@@ -15,8 +15,19 @@ module Data.Aviation.Aip.DocumentNumber(
 , IsDocumentNumber(..)
 ) where
 
+import Control.Category((.), id)
+import Control.Applicative(pure)
+import Control.Lens
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
-import Papa hiding ((.=))
+import Data.Char(Char)
+import Data.Eq(Eq)
+import Data.Functor((<$>))
+import Data.Int(Int)
+import Data.Monoid(Monoid(mappend, mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Data.String(String)
+import Prelude(Show)
 
 newtype DocumentNumber =
   DocumentNumber

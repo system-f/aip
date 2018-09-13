@@ -13,12 +13,19 @@ module Data.Aviation.Aip.Aip_SUP_and_AIC(
 , IsAip_SUP_and_AIC(..)  
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
+import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDate(AipDate)
 import Data.Aviation.Aip.DocumentNumber(DocumentNumber)
 import Data.Aviation.Aip.Href(Href, SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), GetHref, HasHref(href))
 import Data.Aviation.Aip.Title(Title)
-import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
-import Papa hiding ((.=))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor(fmap, (<$>))
+import Data.Ord(Ord)
+import Prelude(Show)
 
 data Aip_SUP_and_AIC =
   Aip_SUP_and_AIC 

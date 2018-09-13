@@ -17,6 +17,8 @@ module Data.Aviation.Aip.AipDocuments(
 , IsAipDocuments(..)    
 ) where
 
+import Control.Category((.), id)
+import Control.Lens
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withArray)
 import Data.Aviation.Aip.Aip_SUP_and_AICs(Aip_SUP_and_AICs)
 import Data.Aviation.Aip.AipDocument(AipDocument)
@@ -25,7 +27,15 @@ import Data.Aviation.Aip.Ersa(Ersa)
 import Data.Aviation.Aip.Href(SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
 import Data.Aviation.Aip.ListItemLinks1(ListItemLinks1)
-import Papa
+import Data.Eq(Eq)
+import Data.Foldable(toList)
+import Data.Function(($))
+import Data.Functor((<$>))
+import Data.Int(Int)
+import Data.Monoid(Monoid(mappend, mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Prelude(Show)
 
 newtype AipDocuments book charts sup_aic dap ersa =
   AipDocuments

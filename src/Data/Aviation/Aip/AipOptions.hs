@@ -9,9 +9,18 @@ module Data.Aviation.Aip.AipOptions(
 , parserAipOptions
 ) where
 
+import Control.Applicative((<*>))
+import Control.Lens
 import Data.Aviation.Aip.Cache(Cache(ReadCache, ReadWriteCache, NoCache))
+import Data.Bool(Bool)
+import Data.Eq(Eq)
+import Data.Functor(fmap, (<$>))
+import Data.Maybe(Maybe(Just, Nothing))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
 import Options.Applicative(Parser, argument, str, help, metavar, option, maybeReader, short, long, value, switch)
-import Papa hiding (option)
+import Prelude(Show)
+import System.FilePath(FilePath)
 
 data AipOptions =
   AipOptions

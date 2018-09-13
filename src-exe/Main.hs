@@ -5,7 +5,7 @@ module Main(
 ) where
 
 import Data.Aviation.Aip(run, nothingAfterDownload)
-import Papa
+import System.IO(IO)
 
 main ::
   IO ()

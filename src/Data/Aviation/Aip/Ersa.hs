@@ -13,11 +13,20 @@ module Data.Aviation.Aip.Ersa(
 , IsErsa(..)    
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Aviation.Aip.ListItemLinks(ListItemLinks)
 import Data.Aviation.Aip.ErsaAerodromes(ErsaAerodromes)
-import Papa hiding ((.=))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor((<$>))
+import Data.Monoid(Monoid(mappend, mempty))
+import Data.Ord(Ord)
+import Data.Semigroup(Semigroup((<>)))
+import Prelude(Show)
 
 data Ersa =
   Ersa

@@ -14,8 +14,13 @@ module Data.Aviation.Aip.ConnErrorHttp4xx(
 , IsConnErrorHttp4xx(..)
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure)
+import Control.Lens
+import Data.Eq(Eq)
+import Data.Int(Int)
 import Network.Stream(ConnError)
-import Papa
+import Prelude(Show)
 
 data ConnErrorHttp4xx =
   IsConnError ConnError

@@ -17,7 +17,15 @@ module Data.Aviation.Aip.Cache(
 , isWriteCache
 ) where
 
-import Papa
+import Control.Category(id)
+import Control.Applicative(pure)
+import Control.Lens
+import Data.Bool(Bool, not)
+import Data.Eq(Eq)
+import Data.Foldable(any)
+import Data.Maybe(Maybe(Just, Nothing))
+import Data.Ord(Ord)
+import Prelude(Show)
 
 data Cache =
   ReadCache

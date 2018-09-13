@@ -13,9 +13,18 @@ module Data.Aviation.Aip.ErsaAerodrome(
 , IsErsaAerodrome(..)    
 ) where
 
-import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
-import Papa hiding ((.=))
+import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor((<$>))
+import Data.Ord(Ord)
+import Data.Maybe(Maybe)
+import Data.String(String)
+import Prelude(Show)
 
 data ErsaAerodrome =
   ErsaAerodrome

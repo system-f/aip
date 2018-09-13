@@ -13,10 +13,17 @@ module Data.Aviation.Aip.ListItemLink(
 , IsListItemLink(..)
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
 import Data.Aviation.Aip.Href(Href, SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), GetHref, HasHref(href))
 import Data.Aviation.Aip.Txt(Txt)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
-import Papa hiding ((.=))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor(fmap, (<$>))
+import Data.Ord(Ord)
+import Prelude(Show)
 
 data ListItemLink =
   ListItemLink

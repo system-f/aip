@@ -11,9 +11,14 @@ module Data.Aviation.Aip.AfterDownload(
 , AfterDownloadAipCon
 ) where
 
+import Control.Category((.))
+import Control.Applicative(Applicative(pure, (<*>)))
+import Control.Lens
+import Control.Monad(Monad(return, (>>=)))
 import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.Href(Href)
-import Papa
+import Data.Functor(Functor(fmap))
+import System.FilePath(FilePath)
 
 newtype AfterDownload f a =
   AfterDownload

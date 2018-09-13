@@ -13,11 +13,19 @@ module Data.Aviation.Aip.DAPDoc(
 , IsDAPDoc(..)
 ) where
 
+import Control.Category(id)
+import Control.Applicative(pure, (<*>))
+import Control.Lens hiding ((.=))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.DAPType(DAPType)
 import Data.Aviation.Aip.DAPEntries(DAPEntries, FoldDAPEntries(_FoldDAPEntries), GetDAPEntries, SetDAPEntries, ManyDAPEntries(_ManyDAPEntries), HasDAPEntries(dapEntries))
 import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
-import Papa hiding ((.=))
+import Data.Eq(Eq)
+import Data.Function(($))
+import Data.Functor(fmap, (<$>))
+import Data.Ord(Ord)
+import Data.String(String)
+import Prelude(Show)
 
 data DAPDoc =
   DAPDoc
