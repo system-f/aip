@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Aviation.Aip.HttpRequest(
   aipRequestGet
@@ -17,7 +18,7 @@ import Control.Applicative(pure)
 import Control.Lens
 import Control.Monad.IO.Class(liftIO)
 import Network.HTTP(HandleStream, getAuth, openStream, host, normalizeRequest, defaultNormalizeRequestOptions, close)
-import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
+import qualified Data.ByteString.Lazy as LazyByteString(ByteString, writeFile)
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
 import Data.Aviation.Aip.AipCon(AipCon(AipCon))
 import Data.Aviation.Aip.Log(aiplog)
@@ -26,6 +27,9 @@ import Data.Aviation.Aip.Href(Href(Href))
 import Data.Bool(Bool(True), bool)
 import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+import Data.Functor((<$>))
+#endif
 import Data.Function(($))
 import Data.List(isPrefixOf, dropWhile)
 import Data.Maybe(Maybe(Just))
@@ -37,6 +41,7 @@ import Network.URI(URI(URI), URIAuth(URIAuth))
 import Prelude(Show(show))
 import System.Directory(createDirectoryIfMissing)
 import System.FilePath(FilePath, splitFileName, isPathSeparator, (</>))
+import System.IO(IO)
 
 aipRequestGet ::
   BufferType ty =>
@@ -144,6 +149,21 @@ downloadHref d hf =
       do  liftIO $ createDirectoryIfMissing True ot
           let ot' = ot </> k
           aiplog ("writing aip document " <> ot')
-          liftIO $ LazyByteString.writeFile ot' r
+          liftIO $ writeFile' ot' r
           liftIO $ close c
           pure ot'
+
+writeFile' ::
+  String
+  -> LazyByteString.ByteString
+  -> IO ()
+writeFile' x z =
+  let x' = 
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+            let repl '?' = '_'
+                repl c = c
+            in  repl <$> x
+#else
+            x
+#endif
+  in  LazyByteString.writeFile x' z
