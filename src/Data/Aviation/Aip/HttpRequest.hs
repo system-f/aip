@@ -28,6 +28,7 @@ import Data.Bool(Bool(True), bool)
 import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+import Data.Foldable(elem)
 import Data.Functor((<$>))
 #endif
 import Data.Function(($))
@@ -149,8 +150,8 @@ downloadHref d hf =
           let ot' = ot </> k
           let otw =
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-                    let repl '?' = '_'
-                        repl ch = ch
+                    let win = "/\\:*\"?<>|"
+                        repl ch = bool ch '_' (ch `elem` win)
                     in  repl <$> ot'
 #else
                     ot'
