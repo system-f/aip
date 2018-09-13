@@ -1,3 +1,7 @@
+0.1.0
+
+* Complete rewrite that fetches each document explicitly using HTML parsing.
+
 0.0.2
 
 * Factor out `main` to `distributeAipDocuments`.
