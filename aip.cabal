@@ -107,7 +107,7 @@ executable          aip
                     , aip
                     
   ghc-options:
-                    -Wall -ddump-splices
+                    -Wall
 
   default-extensions:
                     NoImplicitPrelude
