@@ -149,7 +149,7 @@ downloadHref d hf =
           let otw =
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
                     let repl '?' = '_'
-                        repl c = c
+                        repl ch = ch
                     in  repl <$> ot
 #else
                     ot
