@@ -2,7 +2,6 @@ module Data.Aviation.Aip(
   module A
 ) where
 
-import Data.Aviation.Aip.AfterDownload as A
 import Data.Aviation.Aip.Aip_SUP_and_AIC as A
 import Data.Aviation.Aip.Aip_SUP_and_AICs as A
 import Data.Aviation.Aip.AipCon as A
@@ -29,6 +28,7 @@ import Data.Aviation.Aip.ListItemLink as A
 import Data.Aviation.Aip.ListItemLinks as A
 import Data.Aviation.Aip.ListItemLinks1 as A
 import Data.Aviation.Aip.Log as A
+import Data.Aviation.Aip.PerHref as A
 import Data.Aviation.Aip.SHA1 as A
 import Data.Aviation.Aip.Title as A
 import Data.Aviation.Aip.Txt as A

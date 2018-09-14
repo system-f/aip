@@ -24,6 +24,7 @@ import Data.Aviation.Aip.AipCon(AipCon(AipCon))
 import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
 import Data.Aviation.Aip.Href(Href(Href))
+import Data.Aviation.Aip.PerHref
 import Data.Bool(Bool(True), bool)
 import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
@@ -133,10 +134,9 @@ requestAipContents =
   in  doRequest r
 
 downloadHref ::
-  FilePath
-  -> Href
-  -> AipCon FilePath
-downloadHref d hf =
+  PerHref AipCon FilePath
+downloadHref =
+  PerHref $ \hf d ->
   do  let q = aipRequestGet hf ""
       aiplog ("making request for aip document " <> show q)
       auth <- getAuth q

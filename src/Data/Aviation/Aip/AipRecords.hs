@@ -31,7 +31,7 @@ import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
-import Data.Aviation.Aip.AfterDownload(AfterDownload(AfterDownload), AfterDownloadAipCon)
+import Data.Aviation.Aip.PerHref(PerHref(PerHref), PerHrefAipCon)
 import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.SHA1(showHash)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
@@ -40,7 +40,7 @@ import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord), FoldAipRecord, SetAipRecord, FoldAipRecord(_FoldAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), aipPrefix)
-import Data.Aviation.Aip.HttpRequest(requestAipContents, downloadHref)
+import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.Log(aiplog, aiplog')
 import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
 import Data.Bool(Bool(True))
@@ -297,15 +297,15 @@ aipRecords1 k (AipRecords s r) =
 
 
 run ::
-  AfterDownloadAipCon a
+  PerHrefAipCon a
   -> IO ()
 run k =
   let writeAip ::
-        AfterDownloadAipCon a
+        PerHrefAipCon a
         -> Cache
         -> FilePath
         -> AipCon AipRecords
-      writeAip (AfterDownload w) cch dir =
+      writeAip (PerHref w) cch dir =
         let catchIOException :: 
               MonadCatch m =>
               m a ->
@@ -316,7 +316,7 @@ run k =
         in  do  x <- getAipRecords cch dir
                 let h = dir </> showHash x
                 de <- liftIO $ doesDirectoryExist h
-                let dl = mapMOf_ _ManyHref (\c -> downloadHref h c >>= \z -> w z c) (aipPrefix x)
+                let dl = mapMOf_ _ManyHref (\c -> w c h) (aipPrefix x)
                 catchIOException (de `unless` dl) (\e ->
                   do  aiplog ("IO Exception: " <> show e)
                       liftIO $ removeDirectoryRecursive h)

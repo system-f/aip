@@ -60,7 +60,6 @@ library
 
   exposed-modules:
                     Data.Aviation.Aip
-                    Data.Aviation.Aip.AfterDownload
                     Data.Aviation.Aip.Aip_SUP_and_AIC
                     Data.Aviation.Aip.Aip_SUP_and_AICs
                     Data.Aviation.Aip.AipCon
@@ -88,6 +87,7 @@ library
                     Data.Aviation.Aip.ListItemLinks
                     Data.Aviation.Aip.ListItemLinks1
                     Data.Aviation.Aip.Log
+                    Data.Aviation.Aip.PerHref
                     Data.Aviation.Aip.SHA1
                     Data.Aviation.Aip.Title
                     Data.Aviation.Aip.Txt

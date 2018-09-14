@@ -4,10 +4,10 @@ module Main(
   main
 ) where
 
-import Data.Aviation.Aip(run, nothingAfterDownload)
+import Data.Aviation.Aip(run, downloadHref)
 import System.IO(IO)
 
 main ::
   IO ()
 main =
-  run nothingAfterDownload
+  run downloadHref
