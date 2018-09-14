@@ -7,7 +7,7 @@ module Data.Aviation.Aip.Log(
 
 import Control.Monad(when)
 import Control.Monad.IO.Class(MonadIO(liftIO))
-import Data.Aviation.Aip.AipCon
+import Data.Aviation.Aip.AipCon(AipCon, islog)
 import Data.String(String)
 import System.IO(hPutStrLn, stderr, IO)
 
