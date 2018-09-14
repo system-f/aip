@@ -5,17 +5,18 @@ module Data.Aviation.Aip.Log(
 , aiplog'
 ) where
 
-import Control.Category((.))
+import Control.Monad(when)
 import Control.Monad.IO.Class(MonadIO(liftIO))
+import Data.Aviation.Aip.AipCon
 import Data.String(String)
 import System.IO(hPutStrLn, stderr, IO)
 
 aiplog ::
-  MonadIO f =>
   String
-  -> f ()
-aiplog =
-  liftIO . aiplog'
+  -> AipCon ()
+aiplog s =
+  do  b <- islog
+      when b (liftIO (aiplog' s))
 
 aiplog' ::
   String

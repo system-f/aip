@@ -5,6 +5,7 @@
 
 module Data.Aviation.Aip.AipCon(
   AipCon(..)
+, islog
 ) where
 
 import Control.Category((.))
@@ -61,3 +62,8 @@ instance MonadThrow AipCon where
 instance MonadCatch AipCon where
   catch (AipCon x) k =
     AipCon (\b -> catch (x b) (\z -> let r = k z ^. _Wrapped in r b))
+
+islog ::
+  AipCon Bool
+islog =
+  AipCon pure
