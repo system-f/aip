@@ -15,6 +15,7 @@ import Control.Category((.))
 import Control.Applicative(Applicative(pure, (<*>)))
 import Control.Lens
 import Control.Monad(Monad(return, (>>=)))
+import Control.Monad.Trans.Class(MonadTrans(lift))
 import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.Href(Href)
 import Data.Functor(Functor(fmap))
@@ -39,6 +40,10 @@ instance Monad f => Monad (AfterDownload f) where
     pure
   AfterDownload x >>= f =
     AfterDownload (\p h -> x p h >>= \a -> let g = f a ^. _Wrapped in g p h)
+
+instance MonadTrans AfterDownload where
+  lift =
+    AfterDownload . pure . pure
 
 instance AfterDownload f a ~ x =>
   Rewrapped (AfterDownload g k) x
