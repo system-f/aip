@@ -5,6 +5,7 @@
 
 module Data.Aviation.Aip.PerHref(
   PerHref(..)
+, ioPerHref
 , nothingPerHref
 , hrefPerHref
 , basedirPerHref
@@ -24,6 +25,7 @@ import Data.Functor.Alt(Alt((<!>)))
 import Data.Functor.Apply(Apply((<.>)))
 import Data.Functor.Bind(Bind((>>-)))
 import System.FilePath(FilePath)
+import System.IO(IO)
 
 newtype PerHref f a =
   PerHref
@@ -84,18 +86,28 @@ instance Wrapped (PerHref f k) where
       (\(PerHref x) -> x)
       PerHref
 
+ioPerHref ::
+  MonadIO f =>
+  (Href -> FilePath -> IO a)
+  -> PerHref f a
+ioPerHref k =
+  PerHref (\h p -> liftIO (k h p))
+
 nothingPerHref ::
-  Applicative f => PerHref f ()
+  Applicative f =>
+  PerHref f ()
 nothingPerHref =
   pure ()
 
 hrefPerHref ::
-  Applicative f => PerHref f Href
+  Applicative f =>
+  PerHref f Href
 hrefPerHref =
   PerHref (\h _ -> pure h)
 
 basedirPerHref ::
-  Applicative f => PerHref f FilePath
+  Applicative f =>
+  PerHref f FilePath
 basedirPerHref =
   PerHref (\_ d -> pure d)
 
