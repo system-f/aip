@@ -136,7 +136,7 @@ requestAipContents =
 downloadHref ::
   PerHref AipCon FilePath
 downloadHref =
-  PerHref $ \hf d ->
+  PerHref $ \hf d _ ->
   do  let q = aipRequestGet hf ""
       aiplog ("making request for aip document " <> show q)
       auth <- getAuth q

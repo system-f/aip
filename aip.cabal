@@ -47,6 +47,7 @@ library
                     , time >= 1.6 && < 1.9
                     , utf8-string >= 1.0.1.1 && < 1.1
                     , unordered-containers >= 0.2.9.0 && < 0.3
+                    , unix
                     
   ghc-options:
                     -Wall
@@ -87,7 +88,9 @@ library
                     Data.Aviation.Aip.ListItemLinks
                     Data.Aviation.Aip.ListItemLinks1
                     Data.Aviation.Aip.Log
+                    Data.Aviation.Aip.OnAipRecords
                     Data.Aviation.Aip.PerHref
+                    Data.Aviation.Aip.RunAipRecords
                     Data.Aviation.Aip.SHA1
                     Data.Aviation.Aip.Title
                     Data.Aviation.Aip.Txt
@@ -103,6 +106,12 @@ executable          aip
   build-depends:
                     base >= 4.8 && < 5
                     , aip
+                    , time
+                    , lens
+                    , unix
+                    , directory
+                    , filepath
+                    
                     
   ghc-options:
                     -Wall

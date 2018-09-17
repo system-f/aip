@@ -13,39 +13,31 @@ module Data.Aviation.Aip.AipRecords(
 , IsAipRecords(..)  
 , getAipRecords
 , aipRecords1
-, run
 ) where
 
 import Control.Category((.), id)
-import Control.Applicative(pure, (<*>), (<**>))
+import Control.Applicative(pure, (<*>))
 import Codec.Binary.UTF8.String as UTF8(encode)
-import Control.Exception(IOException)
 import Control.Lens hiding ((.=))
-import Control.Monad((>>=), when, unless)
-import Control.Monad.Catch(MonadCatch(catch))
+import Control.Monad((>>=), when)
 import Control.Monad.IO.Class(liftIO)
-import Control.Monad.Trans.Except(runExceptT)
 import Data.Aeson(decodeFileStrict)
 import Data.Aeson.Encode.Pretty(confIndent, defConfig, Indent(Spaces), encodePretty')
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
-import Data.Aviation.Aip.PerHref(PerHref(PerHref), PerHrefAipCon)
 import Data.Aviation.Aip.AipCon(AipCon)
-import Data.Aviation.Aip.SHA1(showHash)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
-import Data.Aviation.Aip.AipOptions(parserAipOptions, aipOptionLog, aipOptionCache, aipOptionOutputDirectory, aipOptionVerbose)
 import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord), FoldAipRecord, SetAipRecord, FoldAipRecord(_FoldAipRecord))
 import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
-import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref), aipPrefix)
+import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
-import Data.Aviation.Aip.Log(aiplog, aiplog')
+import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
 import Data.Bool(Bool(True))
 import Data.Char(isSpace)
-import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
 import Data.Foldable(length, foldMap)
 import Data.Function(($))
@@ -56,12 +48,9 @@ import Data.Maybe(Maybe(Just, Nothing))
 import Data.Monoid(Monoid(mempty))
 import Data.Semigroup(Semigroup((<>)))
 import Data.String(String)
-import Options.Applicative(execParser, info, helper, fullDesc, header)
 import Prelude(Show(show))
-import System.Directory(doesDirectoryExist, doesFileExist, getPermissions, readable, createDirectoryIfMissing, removeDirectoryRecursive)
-import System.Exit(exitWith, ExitCode(ExitFailure))
+import System.Directory(doesFileExist, getPermissions, readable, createDirectoryIfMissing)
 import System.FilePath(takeDirectory, (</>), FilePath)
-import System.IO(IO, putStrLn)
 import Text.HTML.TagSoup(Tag(TagText))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
 import Text.HTML.TagSoup.Tree.Zipper(TagTreePos(TagTreePos), fromTagTree, traverseTree)
@@ -294,46 +283,3 @@ aipRecords1 ::
   Lens' AipRecords (NonEmpty AipRecord)
 aipRecords1 k (AipRecords s r) =
   fmap (\r' -> AipRecords s r') (k r)
-
-
-run ::
-  PerHrefAipCon a
-  -> IO ()
-run k =
-  let writeAip ::
-        PerHrefAipCon a
-        -> Cache
-        -> FilePath
-        -> AipCon AipRecords
-      writeAip (PerHref w) cch dir =
-        let catchIOException :: 
-              MonadCatch m =>
-              m a ->
-              (IOException -> m a)
-              -> m a
-            catchIOException =
-              catch
-        in  do  x <- getAipRecords cch dir
-                let h = dir </> showHash x
-                de <- liftIO $ doesDirectoryExist h
-                let dl = mapMOf_ _ManyHref (\c -> w c h) (aipPrefix x)
-                catchIOException (de `unless` dl) (\e ->
-                  do  aiplog ("IO Exception: " <> show e)
-                      liftIO $ removeDirectoryRecursive h)
-                pure x
-      p =
-        execParser
-          (info (parserAipOptions <**> helper) (
-            fullDesc <>
-            header "aip 0.1.0 <http://www.airservicesaustralia.com/aip/aip.asp>"
-          )
-        )
-  in  do  opts <- p
-          let lg = (opts ^. aipOptionLog)
-          e <- runExceptT ((writeAip k (opts ^. aipOptionCache) (opts ^. aipOptionOutputDirectory) ^. _Wrapped) lg)
-          case e of
-            Left e' ->
-              do  when lg (aiplog' ("network or HTTP error " <> show e'))
-                  exitWith (ExitFailure 1)
-            Right r ->
-              when (opts ^. aipOptionVerbose) (putStrLn (show r))
