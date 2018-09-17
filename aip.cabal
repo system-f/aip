@@ -45,7 +45,7 @@ library
                     , tagsoup >= 0.13 && < 0.15
                     , tagsoup-selection >= 0.1 && < 0.2
                     , transformers >= 0.5 && < 0.6
-                    , time >= 1.6 && < 1.9
+                    , time >= 1.6 && < 1.10
                     , utf8-string >= 1.0.1.1 && < 1.1
                     , unordered-containers >= 0.2.9.0 && < 0.3
                     
@@ -116,14 +116,14 @@ executable          aip
 
 test-suite          tests
 
-  build-depends:      QuickCheck >=2.9.2 && <2.11
+  build-depends:      QuickCheck >=2.9.2 && <2.13
                     , base >=4.8 && < 5
                     , checkers >=0.4.6 && <0.5
                     , aip
-                    , lens >=4.15 && <4.16
-                    , tasty >=0.11 && <0.12
-                    , tasty-hunit >=0.9 && <0.10
-                    , tasty-quickcheck >=0.8.4 && <0.10
+                    , lens >=4 && <4.18
+                    , tasty >=0.11 && <1.2
+                    , tasty-hunit >=0.9 && <0.11
+                    , tasty-quickcheck >=0.8.4 && <0.11
 
   type:             
                     exitcode-stdio-1.0
