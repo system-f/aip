@@ -136,7 +136,7 @@ requestAipContents =
 downloadHref ::
   PerHref AipCon FilePath
 downloadHref =
-  PerHref $ \hf d _ ->
+  PerHref $ \hf _ d' ->
   do  let q = aipRequestGet hf ""
       aiplog ("making request for aip document " <> show q)
       auth <- getAuth q
@@ -144,7 +144,7 @@ downloadHref =
       c <- liftIO $ openStream (host auth) 80
       r <- doRequest' (normalizeRequest defaultNormalizeRequestOptions q) c
       let (j, k) = splitFileName (hf ^. _Wrapped)
-      let ot = d </> dropWhile isPathSeparator j
+      let ot = d' </> dropWhile isPathSeparator j
       aiplog ("output directory for aip document " <> ot)
       do  liftIO $ createDirectoryIfMissing True ot
           let ot' = ot </> k

@@ -193,4 +193,3 @@ isWriteCache ::
   -> Bool
 isWriteCache x =
   not (isn't _ReadWriteCache x)
-
