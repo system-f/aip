@@ -21,6 +21,7 @@ import Network.HTTP(HandleStream, getAuth, openStream, host, normalizeRequest, d
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
 import Data.Aviation.Aip.AipCon(AipCon(AipCon))
+import Data.Aviation.Aip.AipContents
 import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
 import Data.Aviation.Aip.Href(Href(Href))
@@ -30,9 +31,9 @@ import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
 #if defined(mingw32_HOST_OS) || defined(__MINGW32__)
 import Data.Foldable(elem)
-import Data.Functor((<$>))
 #endif
 import Data.Function(($))
+import Data.Functor((<$>))
 import Data.List(isPrefixOf, dropWhile)
 import Data.Maybe(Maybe(Just))
 import Data.Semigroup(Semigroup((<>)))
@@ -126,12 +127,14 @@ doPostRequest s z =
   doRequest (aipRequestPost s z)
 
 requestAipContents ::
-  AipCon String
+  AipCon AipContents
 requestAipContents =
-  let r = setRequestBody
-            (aipRequestPost (Href "aip.asp") "?pg=10")
+  let path = "aip.asp"
+      query = "?pg=10"
+      r = setRequestBody
+            (aipRequestPost (Href path) query)
             ("application/x-www-form-urlencoded", "Submit=I+Agree&check=1")
-  in  doRequest r
+  in  AipContents path query <$> doRequest r
 
 downloadHref ::
   PerHref AipCon FilePath

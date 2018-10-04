@@ -7,26 +7,23 @@ module Main(
 import Data.Aviation.Aip -- (run, downloadHref)
 import System.IO(IO)
 import Prelude
+import Control.Monad
 import Control.Monad.IO.Class
 import Data.Time
 import Data.Bool
 import Data.Maybe
+import Control.Exception
 import Control.Lens
 import System.Directory
+import System.Directory(createDirectoryLink)
+import System.IO.Error
 import System.FilePath
 import System.Posix.Files
 
 main ::
   IO ()
 main =
-  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) printOnAipRecords
-
---  (
---    ("/tmp/llll/aip/current/aip/complete_16AUG2018.pdf"
--- ,  Href "/aip/current/aip/complete_16AUG2018.pdf"
--- ,  "/tmp/llll"
--- ,  "/tmp/llll/sha1/2d057180bd846bc5f717f47cdb892292b347aa52")
---   )
+  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) ({- printOnAipRecords *> -} (latestLink *> timeLink))
 
 timeDirectory ::
   UTCTime
@@ -47,12 +44,36 @@ timeDirectory (UTCTime dy f) =
         , show (round (f * 1000) :: Integer)
         ]
 
-latest :: PerHrefAipCon ()
-latest =
-  do  d <- basedirPerHref
-      w <- downloaddirPerHref
-      -- delete existing latest
-      liftIO $ linkRelative d (splitPath w) ["latest"]
+removeFileIfExists ::
+  FilePath
+  -> IO ()
+removeFileIfExists fileName =
+  removeFile fileName `catch` (\e -> unless (isDoesNotExistError e) (throwIO e))
+
+latestLink ::
+  OnAipRecordsIO ()
+latestLink =
+  downloaddirOnAipRecords >>=
+    liftIO .
+      mapM_ (\p ->  let lt = takeDirectory p </> "latest"
+                    in  do  removeFileIfExists lt
+                            createDirectoryLink p lt)
+
+timeLink ::
+  OnAipRecordsIO ()
+timeLink =
+  do  d <- basedirOnAipRecords
+      p <- downloaddirOnAipRecords
+      let td = d </> "time"
+      liftIO $ createDirectoryIfMissing True td
+      t <- aipRecordsTimesOnAipRecords
+      let ttt = fmap (\t' -> td </> timeDirectory t') t
+      let ttttt =
+            do  t' <- t
+                
+                fmap (\t' -> td </> timeDirectory t') t
+      -- liftIO $ mapM_ (\tttt -> mapM_ (\p' -> createDirectoryLink p' tttt) p) ttt
+      liftIO $ mapM_ (\tttt -> mapM_ (\p' -> linkRelative d (splitPath p') (splitPath tttt)) p) ttt
 
 linkRelative ::
   FilePath
@@ -63,4 +84,4 @@ linkRelative base t fr =
   let fr' = fromMaybe [] (fr ^? _init)
       lk = (".." <$ fr') ++ t
   in  do  createDirectoryIfMissing True (joinPath (base : fr'))
-          createSymbolicLink (joinPath lk) (joinPath (base : fr))
+          createDirectoryLink (joinPath lk) (joinPath (base : fr))

@@ -12,7 +12,6 @@ module Data.Aviation.Aip.AipRecords(
 , HasAipRecords(..)
 , IsAipRecords(..)  
 , getAipRecords
-, aipRecords1
 ) where
 
 import Control.Category((.), id)
@@ -28,6 +27,7 @@ import Data.Time(getCurrentTime)
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocument(AipDocument(Aip_Book, Aip_Charts, Aip_SUP_AIC, Aip_DAP, Aip_DAH, Aip_ERSA, Aip_AandB_Charts, Aip_Summary_SUP_AIC), runAipDocument)
 import Data.Aviation.Aip.AipCon(AipCon)
+import Data.Aviation.Aip.AipContents(aipContentsBody, aipContentsPath, aipContentsQuery)
 import Data.Aviation.Aip.AipDate(AipDate(AipDate))
 import Data.Aviation.Aip.AipDocuments(AipDocuments1, AipDocuments(AipDocuments))
 import Data.Aviation.Aip.AipRecord(AipRecord(AipRecord), ManyAipRecord(_ManyAipRecord), FoldAipRecord, SetAipRecord, FoldAipRecord(_FoldAipRecord))
@@ -35,7 +35,7 @@ import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.Log(aiplog)
-import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
+import Data.Aviation.Aip.SHA1(SHA1(SHA1), GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
 import Data.Bool(Bool(True))
 import Data.Char(isSpace)
 import Data.Eq(Eq((==)))
@@ -54,6 +54,8 @@ import System.FilePath(takeDirectory, (</>), FilePath)
 import Text.HTML.TagSoup(Tag(TagText))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
 import Text.HTML.TagSoup.Tree.Zipper(TagTreePos(TagTreePos), fromTagTree, traverseTree)
+
+import Data.Digest.SHA1(Word160(Word160))
 
 data AipRecords =
   AipRecords
@@ -135,10 +137,14 @@ class (GetAipRecords a, ManyAipRecords a) => HasAipRecords a where
     Lens' a AipRecords
   aipRecords =
     _IsAipRecords
+  aipRecords1 ::
+    Lens' a (NonEmpty AipRecord)
 
 instance HasAipRecords AipRecords where
   aipRecords =
     id
+  aipRecords1 k (AipRecords s r) =
+    fmap (\r' -> AipRecords s r') (k r)
 
 class (HasAipRecords a, AsAipRecords a) => IsAipRecords a where
   _IsAipRecords ::
@@ -193,8 +199,9 @@ getAipRecords cch dir =
               liftIO $ LazyByteString.writeFile z (encodePretty' conf rs)
       trimSpaces =
           dropWhile isSpace
-  in  do  c <- requestAipContents          
-          let h = hash (UTF8.encode c)
+  in  do  c <- requestAipContents
+          {- todo -}  
+          let h = (SHA1 (Word160 2406228636 3681190974 2723189999 416050933 180416371))  -- hash (UTF8.encode (c ^. aipContentsBody))
           let h' = hashHex h
           aiplog ("aip contents, sha1: " <> h' "")
           let z = dir </> h' ".json"
@@ -234,11 +241,11 @@ getAipRecords cch dir =
                     in  AipDocuments (x >>= li)
                   traverseAipDocuments _ =
                     mempty
-              in  do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree c)
+              in  do  let AipDocuments a = foldMap (traverseTree traverseAipDocuments . fromTagTree) (parseTree (c ^. aipContentsBody))
                       q <- AipDocuments <$> traverse runAipDocument a
                       t <- liftIO getCurrentTime
-                      aiplog ("traverse aip records at time " <> show t)
-                      let rs = AipRecords h (AipRecord t q :| [])
+                      aiplog ("traverse aip records" <> show t)
+                      let rs = AipRecords h (AipRecord t (Href (c ^. aipContentsPath <> c ^. aipContentsQuery)) q :| [])
                       writeCache z rs
                       pure rs
 
@@ -278,8 +285,3 @@ instance SetSHA1 AipRecords where
 instance HasSHA1 AipRecords where
   sha1 k (AipRecords s r) =
     fmap (\s' -> AipRecords s' r) (k s)
-
-aipRecords1 ::
-  Lens' AipRecords (NonEmpty AipRecord)
-aipRecords1 k (AipRecords s r) =
-  fmap (\r' -> AipRecords s r') (k r)

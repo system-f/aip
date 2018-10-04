@@ -9,6 +9,10 @@ module Data.Aviation.Aip.OnAipRecords(
 , nothingOnAipRecords
 , resultOnAipRecords
 , downloaddirOnAipRecords
+, basedirOnAipRecords
+, aipRecordsOnAipRecords
+, aipRecordsTimeOnAipRecords
+, aipRecordsTimesOnAipRecords
 , printOnAipRecords
 , OnAipRecordsAipCon
 , OnAipRecordsIO
@@ -21,12 +25,16 @@ import Control.Monad(Monad(return, (>>=)))
 import Control.Monad.IO.Class(MonadIO(liftIO))
 import Control.Monad.Trans.Class(MonadTrans(lift))
 import Data.Aviation.Aip.AipCon(AipCon)
-import Data.Aviation.Aip.AipRecords(AipRecords)
-import Data.Either(Either(Left, Right))
+import Data.Aviation.Aip.AipRecord(aipRecordTime)
+import Data.Aviation.Aip.AipRecords(AipRecords, aipRecords1)
+import Data.Either(Either(Left, Right), either)
+import Data.Foldable(toList)
 import Data.Functor(Functor(fmap))
 import Data.Functor.Alt(Alt((<!>)))
 import Data.Functor.Apply(Apply((<.>)))
 import Data.Functor.Bind(Bind((>>-)))
+import Data.List.NonEmpty(NonEmpty)
+import Data.Time(UTCTime)
 import System.FilePath(FilePath)
 import System.IO(IO, print, putStrLn)
 import Control.Exception(IOException)
@@ -122,11 +130,35 @@ printOnAipRecords =
                 putStrLn b
         putStrLn d)
 
-downloaddirOnAipRecords ::
+basedirOnAipRecords ::
   Applicative f =>
   OnAipRecords f FilePath
+basedirOnAipRecords =
+  OnAipRecords (\_ d -> pure d)
+
+downloaddirOnAipRecords ::
+  Applicative f =>
+  OnAipRecords f (Either IOException FilePath)
 downloaddirOnAipRecords =
-  OnAipRecords (\_ d-> pure d)
+  OnAipRecords (\e _ -> pure (fmap (view _1) e))
+
+aipRecordsOnAipRecords ::
+  Applicative f =>
+  OnAipRecords f (Either IOException AipRecords)
+aipRecordsOnAipRecords =
+  OnAipRecords (\e _ -> pure (fmap (view _2) e))
+
+aipRecordsTimeOnAipRecords ::
+  Applicative f =>
+  OnAipRecords f (Either IOException (NonEmpty UTCTime))
+aipRecordsTimeOnAipRecords =
+  fmap (fmap (fmap (view aipRecordTime) . view aipRecords1)) aipRecordsOnAipRecords
+
+aipRecordsTimesOnAipRecords ::
+  Applicative f =>
+  OnAipRecords f [UTCTime]
+aipRecordsTimesOnAipRecords =
+  fmap (either (pure []) toList) aipRecordsTimeOnAipRecords
 
 type OnAipRecordsAipCon a =
   OnAipRecords AipCon a

@@ -31,7 +31,7 @@ library
                     , aeson-pretty >= 0.8 && < 0.9
                     , bytestring >= 0.10 && < 0.11
                     , Crypto >= 4.2.5.1 && < 4.3
-                    , directory >= 1.3 && < 1.4
+                    , directory >= 1.3.1 && < 1.4
                     , exceptions >= 0.10.0 && < 1
                     , filepath >= 1.4 && < 1.5
                     , HTTP >= 4000 && < 5000
@@ -64,6 +64,7 @@ library
                     Data.Aviation.Aip.Aip_SUP_and_AIC
                     Data.Aviation.Aip.Aip_SUP_and_AICs
                     Data.Aviation.Aip.AipCon
+                    Data.Aviation.Aip.AipContents
                     Data.Aviation.Aip.AipDate
                     Data.Aviation.Aip.AipDocument
                     Data.Aviation.Aip.AipDocuments

@@ -11,7 +11,6 @@ module Data.Aviation.Aip.AipRecord(
 , ManyAipRecord(..)
 , HasAipRecord(..)
 , IsAipRecord(..)    
-, aipRecordAipDocuments
 ) where
 
 import Control.Category(id)
@@ -19,7 +18,7 @@ import Control.Applicative(pure, (<*>))
 import Control.Lens hiding ((.=))
 import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON), withObject, object, (.:), (.=))
 import Data.Aviation.Aip.AipDocuments(AipDocuments2)
-import Data.Aviation.Aip.Href(SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
+import Data.Aviation.Aip.Href(Href, SetHref, FoldHref, ManyHref(_ManyHref), FoldHref(_FoldHref))
 import Data.Eq(Eq)
 import Data.Function(($))
 import Data.Functor(fmap, (<$>))
@@ -29,6 +28,7 @@ import Prelude(Show)
 data AipRecord =
   AipRecord
     UTCTime
+    Href
     AipDocuments2
   deriving (Eq, Show)
 
@@ -37,11 +37,12 @@ instance FromJSON AipRecord where
     withObject "AipRecord" $ \v ->
       AipRecord <$>
         v .: "utc" <*>
+        v .: "index" <*>
         v .: "documents"
 
 instance ToJSON AipRecord where
-  toJSON (AipRecord t p) =
-    object ["utc" .= t, "documents" .= p]
+  toJSON (AipRecord t i p) =
+    object ["utc" .= t, "index" .= i, "documents" .= p]
 
 class ManyAipRecord a => AsAipRecord a where
   _AipRecord ::
@@ -106,10 +107,22 @@ class (GetAipRecord a, ManyAipRecord a) => HasAipRecord a where
     Lens' a AipRecord
   aipRecord =
     _IsAipRecord
+  aipRecordTime ::
+    Lens' a UTCTime
+  aipRecordIndex ::
+    Lens' a Href
+  aipRecordAipDocuments ::
+    Lens' a AipDocuments2
 
 instance HasAipRecord AipRecord where
   aipRecord =
     id
+  aipRecordTime k (AipRecord t i p) =
+    fmap (\t' -> AipRecord t' i p) (k t)
+  aipRecordIndex k (AipRecord t i p) =
+    fmap (\i' -> AipRecord t i' p) (k i)
+  aipRecordAipDocuments k (AipRecord t i p) =
+    fmap (\p' -> AipRecord t i p') (k p)
 
 class (HasAipRecord a, AsAipRecord a) => IsAipRecord a where
   _IsAipRecord ::
@@ -135,11 +148,5 @@ instance FoldHref AipRecord where
     _ManyHref
 
 instance ManyHref AipRecord where
-  _ManyHref f (AipRecord t p) =
-    AipRecord <$> pure t <*> _ManyHref f p
-
-aipRecordAipDocuments ::
-  Lens' AipRecord AipDocuments2
-aipRecordAipDocuments k (AipRecord t p) =
-  fmap (\p' -> AipRecord t p') (k p)
-
+  _ManyHref f (AipRecord t i p) =
+    AipRecord <$> pure t <*> _ManyHref f i <*> _ManyHref f p
