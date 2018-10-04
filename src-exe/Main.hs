@@ -4,6 +4,7 @@ module Main(
   main
 ) where
 
+import Control.Applicative
 import Data.Aviation.Aip -- (run, downloadHref)
 import System.IO(IO)
 import Prelude
@@ -70,8 +71,7 @@ timeLink =
           liftIO $
             mapM (\b ->
               let (u, v) = doRelative b d
-              in  do  print (u, v)
-                      removeFileIfExists u
+              in  do  removeFileIfExists u
                       createDirectoryLink v u
                       pure u) links
             
@@ -98,4 +98,4 @@ removeFileIfExists ::
   FilePath
   -> IO ()
 removeFileIfExists fileName =
-  removeFile fileName `catch` (\e -> unless (isDoesNotExistError e) (throwIO e))
+  removeFile fileName `catch` (liftA2 unless isDoesNotExistError throwIO)
