@@ -11,6 +11,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Time
 import Data.Bool
+import Data.Foldable
 import Data.Maybe
 import Control.Exception
 import Control.Lens
@@ -23,65 +24,78 @@ import System.Posix.Files
 main ::
   IO ()
 main =
-  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) ({- printOnAipRecords *> -} (latestLink *> timeLink))
+  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d')))
+      ({- printOnAipRecords *> -} (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t))))
 
-timeDirectory ::
-  UTCTime
+latestLink ::
+  OnAipRecordsIO [FilePath]
+latestLink =
+  downloaddirOnAipRecords >>=
+    liftIO .
+      mapM (\p ->  let lt = takeDirectory p </> "latest"
+                        in  do  removeFileIfExists lt
+                                createDirectoryLink p lt
+                                pure lt) . toList
+
+timeLink ::
+  OnAipRecordsIO [FilePath]
+timeLink =
+  let timeDirectory ::
+        UTCTime
+        -> FilePath
+      timeDirectory (UTCTime dy f) =
+        let (y, m, d) =
+              toGregorian dy
+            xx n =
+              bool id ('0':) (n < 10) (show n)
+        in  concat
+              [
+                show y
+              , "-"
+              , xx m
+              , "-"
+              , xx d
+              , "."
+              , show (round (f * 1000) :: Integer)
+              ]
+  in  do  d <- basedirOnAipRecords
+          p <- downloaddirOnAipRecords
+          let td = d </> "time"
+          liftIO $ createDirectoryIfMissing True td
+          t <- aipRecordsTimesOnAipRecords
+          let links =
+                do  t' <- t
+                    p' <- toList p
+                    pure (td </> timeDirectory t', p')
+          liftIO $
+            mapM (\b ->
+              let (u, v) = doRelative b d
+              in  do  print (u, v)
+                      removeFileIfExists u
+                      createDirectoryLink v u
+                      pure u) links
+            
+-- |
+--
+-- >>> doRelative ("/a/b/c/d/e", "/a/b/c") "/a/b"
+-- ("/a/b/c/d/e","../../c")
+--
+-- >>> doRelative ("/a/b/c/d/e", "/a/b/c/x") "/a/b"
+-- ("/a/b/c/d/e","../../c/x")
+--
+-- >>> doRelative ("/a/b/c/d/e", "/a/b/c/x") "/a"
+-- ("/a/b/c/d/e","../../../b/c/x")
+doRelative ::
+  (FilePath, FilePath)
   -> FilePath
-timeDirectory (UTCTime dy f) =
-  let (y, m, d) =
-        toGregorian dy
-      xx n =
-        bool id ('0':) (n < 10) (show n)
-  in  concat
-        [
-          show y
-        , "-"
-        , xx m
-        , "-"
-        , xx d
-        , "."
-        , show (round (f * 1000) :: Integer)
-        ]
+  -> (FilePath, FilePath)
+doRelative x a =
+  let (q, r) = (both %~ makeRelative a) x
+      q' = joinPath . reverse . drop 1 . set (_tail . traverse) ".." . reverse . splitPath $ q
+  in  (a </> q, q' </> r)
 
 removeFileIfExists ::
   FilePath
   -> IO ()
 removeFileIfExists fileName =
   removeFile fileName `catch` (\e -> unless (isDoesNotExistError e) (throwIO e))
-
-latestLink ::
-  OnAipRecordsIO ()
-latestLink =
-  downloaddirOnAipRecords >>=
-    liftIO .
-      mapM_ (\p ->  let lt = takeDirectory p </> "latest"
-                    in  do  removeFileIfExists lt
-                            createDirectoryLink p lt)
-
-timeLink ::
-  OnAipRecordsIO ()
-timeLink =
-  do  d <- basedirOnAipRecords
-      p <- downloaddirOnAipRecords
-      let td = d </> "time"
-      liftIO $ createDirectoryIfMissing True td
-      t <- aipRecordsTimesOnAipRecords
-      let ttt = fmap (\t' -> td </> timeDirectory t') t
-      let ttttt =
-            do  t' <- t
-                
-                fmap (\t' -> td </> timeDirectory t') t
-      -- liftIO $ mapM_ (\tttt -> mapM_ (\p' -> createDirectoryLink p' tttt) p) ttt
-      liftIO $ mapM_ (\tttt -> mapM_ (\p' -> linkRelative d (splitPath p') (splitPath tttt)) p) ttt
-
-linkRelative ::
-  FilePath
-  -> [FilePath]
-  -> [FilePath]
-  -> IO ()
-linkRelative base t fr =
-  let fr' = fromMaybe [] (fr ^? _init)
-      lk = (".." <$ fr') ++ t
-  in  do  createDirectoryIfMissing True (joinPath (base : fr'))
-          createDirectoryLink (joinPath lk) (joinPath (base : fr))
