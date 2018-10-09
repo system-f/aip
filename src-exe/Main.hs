@@ -12,8 +12,11 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Time
 import Data.Bool
+import Data.Char
 import Data.Foldable
+import Data.List.NonEmpty hiding (toList, reverse, drop)
 import Data.Maybe
+import Data.Semigroup
 import Control.Exception
 import Control.Lens
 import System.Directory
@@ -25,18 +28,30 @@ import System.Posix.Files
 main ::
   IO ()
 main =
-  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d')))
-      ({- printOnAipRecords *> -} (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t))))
+  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t)))
+      -- printOnAipRecords
+      -- (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t))))
+      -- (aipRecordsOnAipRecords >>= \e -> pure ((_Right . _ManyHref . _Wrapped %~ reverse . fmap toUpper) e) >>= \r -> liftIO . print $ r)
+
+removeDate ::
+  OnAipRecordsIO ()
+removeDate =
+  do  r <- aipRecordsOnAipRecords
+      -- let r = todo
+      d <- downloaddirOnAipRecords
+      b <- basedirOnAipRecords
+      pure ()
 
 latestLink ::
-  OnAipRecordsIO [FilePath]
+  OnAipRecordsIO (Either IOException (FilePath, FilePath))
 latestLink =
   downloaddirOnAipRecords >>=
-    liftIO .
-      mapM (\p ->  let lt = takeDirectory p </> "latest"
-                        in  do  removeFileIfExists lt
-                                createDirectoryLink p lt
-                                pure lt) . toList
+    mapM (\p -> let lt = takeDirectory p </> "latest"
+                in  do  liftIO (removeIfExistsThenCreateDirectoryLink lt p)
+                        b <- basedirOnAipRecords
+                        let bt = b </> "latest"
+                        liftIO (removeIfExistsThenCreateDirectoryLink bt lt)
+                        pure (bt, lt))
 
 timeLink ::
   OnAipRecordsIO [FilePath]
@@ -71,8 +86,7 @@ timeLink =
           liftIO $
             mapM (\b ->
               let (u, v) = doRelative b d
-              in  do  removeFileIfExists u
-                      createDirectoryLink v u
+              in  do  removeIfExistsThenCreateDirectoryLink u v
                       pure u) links
             
 -- |
@@ -93,6 +107,14 @@ doRelative x a =
   let (q, r) = (both %~ makeRelative a) x
       q' = joinPath . reverse . drop 1 . set (_tail . traverse) ".." . reverse . splitPath $ q
   in  (a </> q, q' </> r)
+
+removeIfExistsThenCreateDirectoryLink ::
+  FilePath
+  -> FilePath
+  -> IO ()
+removeIfExistsThenCreateDirectoryLink u v =
+  do  removeFileIfExists u
+      createDirectoryLink v u
 
 removeFileIfExists ::
   FilePath
