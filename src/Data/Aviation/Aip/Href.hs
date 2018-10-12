@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Aviation.Aip.Href(
   Href(..)
@@ -15,6 +16,7 @@ module Data.Aviation.Aip.Href(
 , IsHref(..)
 , dropHrefFile
 , aipPrefix
+, windows_replace
 ) where
 
 import Control.Category((.), id)
@@ -24,6 +26,9 @@ import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
 import Data.Bool(bool)
 import Data.Char(Char)
 import Data.Eq(Eq((/=)))
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+import Data.Foldable(elem)
+#endif
 import Data.Functor((<$>))
 import Data.Int(Int)
 import Data.List(reverse, dropWhile, isPrefixOf)
@@ -220,3 +225,15 @@ aipPrefix ::
   -> s
 aipPrefix =
   _ManyHref . _Wrapped %~ let p = "/aip/" in bool <$> (p <>) <*> id <*> isPrefixOf p
+
+windows_replace ::
+  String
+  -> String
+windows_replace x = 
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+  let win = "/\\:*\"?<>|"
+      repl ch = bool ch '_' (ch `elem` win)
+  in  repl <$> x
+#else
+  x
+#endif                    

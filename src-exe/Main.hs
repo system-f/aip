@@ -14,33 +14,51 @@ import Data.Time
 import Data.Bool
 import Data.Char
 import Data.Foldable
-import Data.List.NonEmpty hiding (toList, reverse, drop)
-import Data.Maybe
-import Data.Semigroup
+import Data.List.Lens
 import Control.Exception
 import Control.Lens
 import System.Directory
 import System.Directory(createDirectoryLink)
 import System.IO.Error
 import System.FilePath
-import System.Posix.Files
 
 main ::
   IO ()
 main =
-  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t)))
+  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> removeDate >>= \r -> liftIO (print (l, t, r)))
       -- printOnAipRecords
       -- (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t))))
       -- (aipRecordsOnAipRecords >>= \e -> pure ((_Right . _ManyHref . _Wrapped %~ reverse . fmap toUpper) e) >>= \r -> liftIO . print $ r)
 
 removeDate ::
-  OnAipRecordsIO ()
+  OnAipRecordsIO FilePath
 removeDate =
-  do  r <- aipRecordsOnAipRecords
-      -- let r = todo
-      d <- downloaddirOnAipRecords
-      b <- basedirOnAipRecords
-      pure ()
+  let linkHref ::
+        FilePath
+        -> FilePath
+        -> Either IOException FilePath
+        -> Href
+        -> IO ()
+      linkHref nodate b d (Href h) =
+        let split =
+              fmap (\(a, r) -> (joinPath (".." <$ a), joinPath a, r)) . unsnoc . splitDirectories . dropWhile isPathSeparator
+            ms = 
+              do  d'     <- d ^? _Right . prefixed b
+                  (h', i, j)     <- split h
+                  pure (d', h', i, j)
+        in  mapM_ (\(d', h', i, j) ->
+              do  let i' = nodate </> i
+                  mkdir i'
+                  removeIfExistsThenCreateDirectoryLink
+                    (i' </> removeDateFilePath j)
+                    (".." </> h' </> d' </> i </> j)
+                  ) ms
+  in  do  r <- prefixedAipRecordsOnAipRecords
+          b <- basedirOnAipRecords
+          d <- downloaddirOnAipRecords
+          let nodate = b </> "nodate"
+          liftIO $ traverse_ (linkHref nodate b d) (toListOf (_Right . _ManyHref) r)
+          pure nodate
 
 latestLink ::
   OnAipRecordsIO (Either IOException (FilePath, FilePath))
@@ -77,7 +95,7 @@ timeLink =
   in  do  d <- basedirOnAipRecords
           p <- downloaddirOnAipRecords
           let td = d </> "time"
-          liftIO $ createDirectoryIfMissing True td
+          liftIO $ mkdir td
           t <- aipRecordsTimesOnAipRecords
           let links =
                 do  t' <- t
@@ -113,11 +131,33 @@ removeIfExistsThenCreateDirectoryLink ::
   -> FilePath
   -> IO ()
 removeIfExistsThenCreateDirectoryLink u v =
-  do  removeFileIfExists u
-      createDirectoryLink v u
+  let u' = windows_replace u
+  in  do  removeFileIfExists u'
+          createDirectoryLink (windows_replace v) u'
+
+mkdir ::
+  String
+  -> IO ()
+mkdir d =
+  createDirectoryIfMissing True (windows_replace d) 
 
 removeFileIfExists ::
   FilePath
   -> IO ()
 removeFileIfExists fileName =
   removeFile fileName `catch` (liftA2 unless isDoesNotExistError throwIO)
+
+removeDateFilePath ::
+  FilePath
+  -> FilePath
+removeDateFilePath x =
+  case reverse x of
+    (ext3:ext2:ext1:'.':y4:y3:y2:y1:m3:m2:m1:d2:d1:'_':r) ->
+      if and [all isDigit [y4,y3,y2,y1], all isUpper [m3,m2,m1], all isDigit [d2,d1]]
+        then
+          reverse r ++ '.':ext1:ext2:[ext3]
+        else
+          x
+    _ ->
+      x
+

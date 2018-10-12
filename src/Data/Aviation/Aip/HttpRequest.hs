@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE CPP #-}
 
 module Data.Aviation.Aip.HttpRequest(
   aipRequestGet
@@ -24,14 +23,11 @@ import Data.Aviation.Aip.AipCon(AipCon(AipCon))
 import Data.Aviation.Aip.AipContents
 import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
-import Data.Aviation.Aip.Href(Href(Href))
-import Data.Aviation.Aip.PerHref
+import Data.Aviation.Aip.Href(Href(Href), windows_replace)
+import Data.Aviation.Aip.PerHref(PerHref(PerHref))
 import Data.Bool(Bool(True), bool)
 import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-import Data.Foldable(elem)
-#endif
 import Data.Function(($))
 import Data.Functor((<$>))
 import Data.List(isPrefixOf, dropWhile)
@@ -151,14 +147,7 @@ downloadHref =
       aiplog ("output directory for aip document " <> ot)
       do  liftIO $ createDirectoryIfMissing True ot
           let ot' = ot </> k
-          let otw =
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-                    let win = "/\\:*\"?<>|"
-                        repl ch = bool ch '_' (ch `elem` win)
-                    in  repl <$> ot'
-#else
-                    ot'
-#endif                    
+          let otw = windows_replace ot'
           aiplog ("writing aip document " <> otw)
           liftIO $ LazyByteString.writeFile otw r
           liftIO $ close c

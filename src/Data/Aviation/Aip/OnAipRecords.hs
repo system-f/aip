@@ -11,6 +11,7 @@ module Data.Aviation.Aip.OnAipRecords(
 , downloaddirOnAipRecords
 , basedirOnAipRecords
 , aipRecordsOnAipRecords
+, prefixedAipRecordsOnAipRecords
 , aipRecordsTimeOnAipRecords
 , aipRecordsTimesOnAipRecords
 , printOnAipRecords
@@ -27,6 +28,7 @@ import Control.Monad.Trans.Class(MonadTrans(lift))
 import Data.Aviation.Aip.AipCon(AipCon)
 import Data.Aviation.Aip.AipRecord(aipRecordTime)
 import Data.Aviation.Aip.AipRecords(AipRecords, aipRecords1)
+import Data.Aviation.Aip.Href(aipPrefix)
 import Data.Either(Either(Left, Right), either)
 import Data.Foldable(toList)
 import Data.Functor(Functor(fmap))
@@ -147,6 +149,12 @@ aipRecordsOnAipRecords ::
   OnAipRecords f (Either IOException AipRecords)
 aipRecordsOnAipRecords =
   OnAipRecords (\e _ -> pure (fmap (view _2) e))
+
+prefixedAipRecordsOnAipRecords ::
+  Applicative f =>
+  OnAipRecords f (Either IOException AipRecords)
+prefixedAipRecordsOnAipRecords =
+  fmap (fmap aipPrefix) aipRecordsOnAipRecords
 
 aipRecordsTimeOnAipRecords ::
   Applicative f =>
