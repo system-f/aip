@@ -31,14 +31,14 @@ main =
       -- (aipRecordsOnAipRecords >>= \e -> pure ((_Right . _ManyHref . _Wrapped %~ reverse . fmap toUpper) e) >>= \r -> liftIO . print $ r)
 
 removeDate ::
-  OnAipRecordsIO FilePath
+  OnAipRecordsIO [FilePath]
 removeDate =
   let linkHref ::
         FilePath
         -> FilePath
         -> Either IOException FilePath
         -> Href
-        -> IO ()
+        -> IO (Maybe FilePath)
       linkHref nodate b d (Href h) =
         let split =
               fmap (\(a, r) -> (joinPath (".." <$ a), joinPath a, r)) . unsnoc . splitDirectories . dropWhile isPathSeparator
@@ -46,20 +46,22 @@ removeDate =
               do  d'     <- d ^? _Right . prefixed b
                   (h', i, j)     <- split h
                   pure (d', h', i, j)
-        in  mapM_ (\(d', h', i, j) ->
+        in  mapM (\(d', h', i, j) ->
               do  let i' = nodate </> i
+                  let link = i' </> removeDateFilePath j
                   mkdir i'
                   removeIfExistsThenCreateDirectoryLink
-                    (i' </> removeDateFilePath j)
+                    link
                     (".." </> h' </> d' </> i </> j)
+                  pure link
                   ) ms
   in  do  r <- prefixedAipRecordsOnAipRecords
           b <- basedirOnAipRecords
           d <- downloaddirOnAipRecords
           let nodate = b </> "nodate"
-          liftIO $ traverse_ (linkHref nodate b d) (toListOf (_Right . _ManyHref) r)
-          pure nodate
-
+          z <- liftIO $ traverse (linkHref nodate b d) (toListOf (_Right . _ManyHref) r)
+          pure (z ^.. folded . _Just)
+          
 latestLink ::
   OnAipRecordsIO (Either IOException (FilePath, FilePath))
 latestLink =
