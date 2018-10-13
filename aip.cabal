@@ -112,7 +112,7 @@ executable          aip
                     , unix
                     , directory
                     , filepath
-                    
+                    , exceptions >= 0.10.0 && < 1                    
                     
   ghc-options:
                     -Wall

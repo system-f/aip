@@ -15,17 +15,18 @@ import Data.Bool
 import Data.Char
 import Data.Foldable
 import Data.List.Lens
-import Control.Exception
+import Control.Exception hiding (catch)
 import Control.Lens
 import System.Directory
 import System.Directory(createDirectoryLink)
 import System.IO.Error
 import System.FilePath
+import Control.Monad.Catch(MonadCatch(catch))
 
 main ::
   IO ()
 main =
-  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> removeDate >>= \r -> liftIO (print (l, t, r)))
+  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> removeDate >>= \r -> liftIO (print (l, t {- , r -})))
       -- printOnAipRecords
       -- (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t))))
       -- (aipRecordsOnAipRecords >>= \e -> pure ((_Right . _ManyHref . _Wrapped %~ reverse . fmap toUpper) e) >>= \r -> liftIO . print $ r)
@@ -35,43 +36,53 @@ removeDate ::
 removeDate =
   let linkHref ::
         FilePath
-        -> FilePath
         -> Either IOException FilePath
         -> Href
         -> IO (Maybe FilePath)
-      linkHref nodate b d (Href h) =
-        let split =
-              fmap (\(a, r) -> (joinPath (".." <$ a), joinPath a, r)) . unsnoc . splitDirectories . dropWhile isPathSeparator
-            ms = 
+      linkHref b d (Href h) =
+        let ms = 
               do  d'     <- d ^? _Right . prefixed b
-                  (h', i, j)     <- split h
-                  pure (d', h', i, j)
-        in  mapM (\(d', h', i, j) ->
-              do  let i' = nodate </> i
+                  (a, r) <- unsnoc . splitDirectories . dropWhile isPathSeparator $ h
+                  pure (d', a, r)
+        in  mapM (\(d', a, j) ->
+              do  let i = joinPath a
+                  let i' = b </> "nodate" </> i
                   let link = i' </> removeDateFilePath j
                   mkdir i'
-                  removeIfExistsThenCreateDirectoryLink
-                    link
-                    (".." </> h' </> d' </> i </> j)
+                  _ <-  removeIfExistsThenCreateDirectoryLink
+                          link
+                          (".." </> dotdot a </> d' </> i </> j)
                   pure link
                   ) ms
   in  do  r <- prefixedAipRecordsOnAipRecords
           b <- basedirOnAipRecords
           d <- downloaddirOnAipRecords
-          let nodate = b </> "nodate"
-          z <- liftIO $ traverse (linkHref nodate b d) (toListOf (_Right . _ManyHref) r)
+          z <- liftIO $ traverse (linkHref b d) (toListOf (_Right . _ManyHref) r)
           pure (z ^.. folded . _Just)
-          
+
+getSymbolicLinkTarget' ::
+  FilePath
+  -> IO (Maybe FilePath)
+getSymbolicLinkTarget' x =
+  let catchIOException :: 
+        MonadCatch m =>
+        m a ->
+        (IOException -> m a)
+        -> m a
+      catchIOException =
+        catch
+  in  catchIOException (Just <$> getSymbolicLinkTarget x) (const (pure Nothing))
+
 latestLink ::
-  OnAipRecordsIO (Either IOException (FilePath, FilePath))
+  OnAipRecordsIO (Either IOException (Maybe FilePath, FilePath, FilePath))
 latestLink =
   downloaddirOnAipRecords >>=
     mapM (\p -> let lt = takeDirectory p </> "latest"
-                in  do  liftIO (removeIfExistsThenCreateDirectoryLink lt p)
+                in  do  z <- liftIO (removeIfExistsThenCreateDirectoryLink lt p)
                         b <- basedirOnAipRecords
                         let bt = b </> "latest"
-                        liftIO (removeIfExistsThenCreateDirectoryLink bt lt)
-                        pure (bt, lt))
+                        _ <- liftIO (removeIfExistsThenCreateDirectoryLink bt lt)
+                        pure (z, bt, lt))
 
 timeLink ::
   OnAipRecordsIO [FilePath]
@@ -106,7 +117,7 @@ timeLink =
           liftIO $
             mapM (\b ->
               let (u, v) = doRelative b d
-              in  do  removeIfExistsThenCreateDirectoryLink u v
+              in  do  _ <- removeIfExistsThenCreateDirectoryLink u v
                       pure u) links
             
 -- |
@@ -131,11 +142,19 @@ doRelative x a =
 removeIfExistsThenCreateDirectoryLink ::
   FilePath
   -> FilePath
-  -> IO ()
+  -> IO (Maybe FilePath)
 removeIfExistsThenCreateDirectoryLink u v =
   let u' = windows_replace u
-  in  do  removeFileIfExists u'
+  in  do  r <- getSymbolicLinkTarget' u'
+          removeFileIfExists u'
           createDirectoryLink (windows_replace v) u'
+          pure r
+
+dotdot ::
+  [a]
+  -> FilePath
+dotdot a =
+  joinPath (".." <$ a)
 
 mkdir ::
   String
