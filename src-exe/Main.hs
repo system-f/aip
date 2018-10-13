@@ -13,40 +13,38 @@ import Control.Monad.IO.Class
 import Data.Time
 import Data.Bool
 import Data.Char
+import Data.List
 import Data.Foldable
-import Data.List.Lens
 import Control.Exception hiding (catch)
 import Control.Lens
 import System.Directory
 import System.Directory(createDirectoryLink)
 import System.IO.Error
+import System.Exit
 import System.FilePath
+import System.Process
 import Control.Monad.Catch(MonadCatch(catch))
 
 main ::
   IO ()
 main =
-  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> removeDate >>= \r -> liftIO (print (l, t {- , r -})))
-      -- printOnAipRecords
-      -- (latestLink >>= \l -> timeLink >>= \t -> liftIO (print (l, t))))
-      -- (aipRecordsOnAipRecords >>= \e -> pure ((_Right . _ManyHref . _Wrapped %~ reverse . fmap toUpper) e) >>= \r -> liftIO . print $ r)
+  run (downloadHref >>= \z -> ioPerHref (\h d d' -> print (z, h, d, d'))) (latestLink >>= \l -> timeLink >>= \t -> removeDate >>= \r -> archive (latestLinkList l) >>= \c -> liftIO (print (l, t, c)))
 
 removeDate ::
   OnAipRecordsIO [FilePath]
 removeDate =
   let linkHref ::
-        FilePath
-        -> Either IOException FilePath
+        Either IOException FilePath
         -> Href
         -> IO (Maybe FilePath)
-      linkHref b d (Href h) =
+      linkHref d (Href h) =
         let ms = 
-              do  d'     <- d ^? _Right . prefixed b
+              do  d'     <- d ^? _Right
                   (a, r) <- unsnoc . splitDirectories . dropWhile isPathSeparator $ h
                   pure (d', a, r)
         in  mapM (\(d', a, j) ->
               do  let i = joinPath a
-                  let i' = b </> "nodate" </> i
+                  let i' = d' </> "nodate" </> i
                   let link = i' </> removeDateFilePath j
                   mkdir i'
                   _ <-  removeIfExistsThenCreateDirectoryLink
@@ -55,9 +53,8 @@ removeDate =
                   pure link
                   ) ms
   in  do  r <- prefixedAipRecordsOnAipRecords
-          b <- basedirOnAipRecords
           d <- downloaddirOnAipRecords
-          z <- liftIO $ traverse (linkHref b d) (toListOf (_Right . _ManyHref) r)
+          z <- liftIO $ traverse (linkHref d) (toListOf (_Right . _ManyHref) r)
           pure (z ^.. folded . _Just)
 
 getSymbolicLinkTarget' ::
@@ -73,6 +70,12 @@ getSymbolicLinkTarget' x =
         catch
   in  catchIOException (Just <$> getSymbolicLinkTarget x) (const (pure Nothing))
 
+latestLinkList ::
+  Either IOException (Maybe FilePath, FilePath, FilePath)
+  -> [FilePath]
+latestLinkList g =
+  maybe [] pure (g ^? _Right . _2)
+  
 latestLink ::
   OnAipRecordsIO (Either IOException (Maybe FilePath, FilePath, FilePath))
 latestLink =
@@ -83,6 +86,122 @@ latestLink =
                         let bt = b </> "latest"
                         _ <- liftIO (removeIfExistsThenCreateDirectoryLink bt lt)
                         pure (z, bt, lt))
+
+followLinks ::
+  FilePath
+  -> IO (Maybe FilePath)
+followLinks p =
+  let plusM :: IO (Maybe FilePath) -> IO (Maybe FilePath) -> IO (Maybe FilePath)
+      plusM x y =
+        do  x' <- x
+            case x' of
+              Nothing ->
+                y
+              r@(Just _) ->
+                pure r
+  in  do  q <- getSymbolicLinkTarget' p
+          case q of
+            Nothing ->
+              pure Nothing
+            Just s ->
+              followLinks s `plusM` pure q
+
+followLinks' ::
+  FilePath
+  -> IO FilePath
+followLinks' p =
+  let fromMaybeM :: IO a -> IO (Maybe a) -> IO a
+      fromMaybeM x y =
+        do  y' <- y
+            case y' of
+              Nothing ->
+                x
+              Just a ->
+                pure a
+  in  pure p `fromMaybeM` getSymbolicLinkTarget' p
+
+-- getSymbolicLinkTarget' :: FilePath -> IO (Maybe FilePath)
+-- getSymbolicLinkTarget :: FilePath -> IO FilePath
+
+archive ::
+  [FilePath]
+  -> OnAipRecordsIO (Either IOException [(FilePath, ExitCode)])
+archive x =
+  let system' ::
+        [String]
+        -> IO ExitCode
+      system' s =
+        do  let s' = intercalate " " s
+            e <- system s'
+            putStrLn s'
+            pure e
+      quote ::
+        String
+        -> String
+      quote w =
+        '"' : w ++ "\""
+      targz ::
+        Traversable f =>
+        f FilePath
+        -> OnAipRecordsIO [(FilePath, ExitCode)]
+      targz d =
+        liftIO $
+          (^.. folded . _Just) <$>
+          mapM (\d' ->
+            let (b, z) = splitFileName d'
+                arch = b ++ z ++ ".tar.gz"
+            in  do  a <- doesFileExist arch
+                    if a
+                      then
+                        pure Nothing
+                      else
+                        do  t <- doesDirectoryExist d'
+                            if t
+                              then
+                                do  u <- pathIsSymbolicLink d'
+                                    k <- system'
+                                          [
+                                            "tar"
+                                          , "-C"
+                                          , quote b
+                                          , "-czvf"
+                                          , quote arch
+                                          , bool id (++ "/*") u z
+                                          ]
+                                    pure (Just (arch, k))
+                              else
+                                pure Nothing
+          ) d
+  in  do  d <- downloaddirOnAipRecords
+          mapM (\d' -> targz ([
+                                  d'
+                                , d' </> "aip" </> "current"
+                                , d' </> "aip" </> "current" </> "aip"
+                                , d' </> "aip" </> "current" </> "aipchart"
+                                , d' </> "aip" </> "current" </> "aipchart" </> "erch"
+                                , d' </> "aip" </> "current" </> "aipchart" </> "ercl"
+                                , d' </> "aip" </> "current" </> "aipchart" </> "pca"
+                                , d' </> "aip" </> "current" </> "aipchart" </> "tac"
+                                , d' </> "aip" </> "current" </> "aipchart" </> "vnc"
+                                , d' </> "aip" </> "current" </> "aipchart" </> "vtc"
+                                , d' </> "aip" </> "current" </> "dap"
+                                , d' </> "aip" </> "current" </> "ersa"
+                                , d' </> "aip" </> "current" </> "sup"
+                                , d' </> "aip" </> "current" </> "SUP_AIP_Summary"
+                                , d' </> "aip" </> "pending"
+                                , d' </> "aip" </> "pending" </> "aip"
+                                , d' </> "aip" </> "pending" </> "aipchart"
+                                , d' </> "aip" </> "pending" </> "aipchart" </> "erch"
+                                , d' </> "aip" </> "pending" </> "aipchart" </> "ercl"
+                                , d' </> "aip" </> "pending" </> "aipchart" </> "pca"
+                                , d' </> "aip" </> "pending" </> "aipchart" </> "tac"
+                                , d' </> "aip" </> "pending" </> "aipchart" </> "vnc"
+                                , d' </> "aip" </> "pending" </> "aipchart" </> "vtc"
+                                , d' </> "aip" </> "pending" </> "dap"
+                                , d' </> "aip" </> "pending" </> "ersa"
+                                , d' </> "aip" </> "pending" </> "sup"
+                                , d' </> "aip" </> "pending" </> "SUP_AIP_Summary"
+                                ] ++ x)) d
 
 timeLink ::
   OnAipRecordsIO [FilePath]
