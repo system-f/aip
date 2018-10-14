@@ -8,6 +8,7 @@ module Data.Aviation.Aip.OnAipRecords(
 , ioOnAipRecords
 , nothingOnAipRecords
 , resultOnAipRecords
+, logOnAipRecords
 , downloaddirOnAipRecords
 , basedirOnAipRecords
 , aipRecordsOnAipRecords
@@ -17,6 +18,8 @@ module Data.Aviation.Aip.OnAipRecords(
 , printOnAipRecords
 , OnAipRecordsAipCon
 , OnAipRecordsIO
+, logeachOnAipRecords
+, logShowOnAipRecords
 ) where
 
 import Control.Category((.))
@@ -36,57 +39,59 @@ import Data.Functor.Alt(Alt((<!>)))
 import Data.Functor.Apply(Apply((<.>)))
 import Data.Functor.Bind(Bind((>>-)))
 import Data.List.NonEmpty(NonEmpty)
+import Data.String(String)
 import Data.Time(UTCTime)
+import Prelude(Show(show))
 import System.FilePath(FilePath)
 import System.IO(IO, print, putStrLn)
 import Control.Exception(IOException)
 
 newtype OnAipRecords f a =
   OnAipRecords
-    (Either IOException (FilePath, AipRecords) -> FilePath -> f a)
+    (Either IOException (FilePath, AipRecords) -> (String -> IO ()) -> FilePath -> f a)
 
 instance Functor f => Functor (OnAipRecords f) where
   fmap f (OnAipRecords x) =
-    OnAipRecords (\h d -> fmap f (x h d))
+    OnAipRecords (\h l d -> fmap f (x h l d))
 
 instance Apply f => Apply (OnAipRecords f) where
   OnAipRecords f <.> OnAipRecords a =
-    OnAipRecords (\h d -> f h d <.> a h d)
+    OnAipRecords (\h l d -> f h l d <.> a h l d)
 
 instance Applicative f => Applicative (OnAipRecords f) where
   pure =
-    OnAipRecords . pure . pure . pure
+    OnAipRecords . pure . pure . pure . pure
 
   OnAipRecords f <*> OnAipRecords a =
-    OnAipRecords (\h d -> f h d <*> a h d)
+    OnAipRecords (\h l d -> f h l d <*> a h l d)
 
 instance Bind f => Bind (OnAipRecords f) where
   OnAipRecords x >>- f =
-    OnAipRecords (\h d -> x h d >>- \a -> let g = f a ^. _Wrapped in g h d)
+    OnAipRecords (\h l d -> x h l d >>- \a -> let g = f a ^. _Wrapped in g h l d)
 
 instance Monad f => Monad (OnAipRecords f) where
   return =
     pure
   OnAipRecords x >>= f =
-    OnAipRecords (\h d -> x h d >>= \a -> let g = f a ^. _Wrapped in g h d)
+    OnAipRecords (\h l d -> x h l d >>= \a -> let g = f a ^. _Wrapped in g h l d)
 
 instance Alt f => Alt (OnAipRecords f) where
   OnAipRecords x <!> OnAipRecords y =
-    OnAipRecords (\h d -> x h d <!> y h d)
+    OnAipRecords (\h l d -> x h l d <!> y h l d)
 
 instance Alternative f => Alternative (OnAipRecords f) where
   OnAipRecords x <|> OnAipRecords y =
-    OnAipRecords (\h d -> x h d <|> y h d)
+    OnAipRecords (\h l d -> x h l d <|> y h l d)
   empty =
-    (OnAipRecords . pure . pure) empty
+    (OnAipRecords . pure . pure . pure) empty
 
 instance MonadTrans OnAipRecords where
   lift =
-    OnAipRecords . pure . pure
+    OnAipRecords . pure . pure . pure
 
 instance MonadIO f => MonadIO (OnAipRecords f) where
   liftIO =
-    OnAipRecords . pure . pure . liftIO
+    OnAipRecords . pure . pure . pure . liftIO
 
 instance OnAipRecords f a ~ x =>
   Rewrapped (OnAipRecords g k) x
@@ -94,6 +99,7 @@ instance OnAipRecords f a ~ x =>
 instance Wrapped (OnAipRecords f k) where
   type Unwrapped (OnAipRecords f k) =
       Either IOException (FilePath, AipRecords)
+      -> (String -> IO ())
       -> FilePath
       -> f k
   _Wrapped' =
@@ -103,10 +109,10 @@ instance Wrapped (OnAipRecords f k) where
 
 ioOnAipRecords ::
   MonadIO f =>
-  (Either IOException (FilePath, AipRecords) -> FilePath -> IO a)
+  (Either IOException (FilePath, AipRecords) -> (String -> IO ()) -> FilePath -> IO a)
   -> OnAipRecords f a
 ioOnAipRecords k =
-  OnAipRecords (\h d -> liftIO (k h d))
+  OnAipRecords (\h l d -> liftIO (k h l d))
 
 nothingOnAipRecords ::
   Applicative f =>
@@ -118,12 +124,18 @@ resultOnAipRecords ::
   Applicative f =>
   OnAipRecords f (Either IOException (FilePath, AipRecords))
 resultOnAipRecords =
-  OnAipRecords (\h _ -> pure h)
+  OnAipRecords (\h _ _ -> pure h)
+
+logOnAipRecords ::
+  Applicative f =>
+  OnAipRecords f (String -> IO ())
+logOnAipRecords =
+  OnAipRecords (\_ l _ -> pure l)
 
 printOnAipRecords ::
   OnAipRecordsIO ()
 printOnAipRecords =
-  OnAipRecords (\h d ->
+  OnAipRecords (\h _ d ->
     do  case h of
           Left e ->
             print e
@@ -136,19 +148,19 @@ basedirOnAipRecords ::
   Applicative f =>
   OnAipRecords f FilePath
 basedirOnAipRecords =
-  OnAipRecords (\_ d -> pure d)
+  OnAipRecords (\_ _ d -> pure d)
 
 downloaddirOnAipRecords ::
   Applicative f =>
   OnAipRecords f (Either IOException FilePath)
 downloaddirOnAipRecords =
-  OnAipRecords (\e _ -> pure (fmap (view _1) e))
+  OnAipRecords (\e _ _ -> pure (fmap (view _1) e))
 
 aipRecordsOnAipRecords ::
   Applicative f =>
   OnAipRecords f (Either IOException AipRecords)
 aipRecordsOnAipRecords =
-  OnAipRecords (\e _ -> pure (fmap (view _2) e))
+  OnAipRecords (\e _ _ -> pure (fmap (view _2) e))
 
 prefixedAipRecordsOnAipRecords ::
   Applicative f =>
@@ -173,3 +185,18 @@ type OnAipRecordsAipCon a =
 
 type OnAipRecordsIO a =
   OnAipRecords IO a
+
+logeachOnAipRecords ::
+  OnAipRecordsIO ()
+logeachOnAipRecords =
+  OnAipRecords (\h l d ->
+    do  l (either show show h)
+        l (show d))
+
+logShowOnAipRecords ::
+  Show a =>
+  a
+  -> OnAipRecordsIO ()
+logShowOnAipRecords z =
+  do  l <- logOnAipRecords
+      lift (l (show z))

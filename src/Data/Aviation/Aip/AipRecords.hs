@@ -35,7 +35,7 @@ import Data.Aviation.Aip.Cache(Cache, isReadOrWriteCache, isWriteCache)
 import Data.Aviation.Aip.Href(Href(Href), SetHref, FoldHref(_FoldHref), ManyHref(_ManyHref))
 import Data.Aviation.Aip.HttpRequest(requestAipContents)
 import Data.Aviation.Aip.Log(aiplog)
-import Data.Aviation.Aip.SHA1(SHA1(SHA1), GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
+import Data.Aviation.Aip.SHA1(SHA1, GetSHA1, ManySHA1(_ManySHA1), SetSHA1, HasSHA1(sha1), FoldSHA1(_FoldSHA1), hash, hashHex)
 import Data.Bool(Bool(True))
 import Data.Char(isSpace)
 import Data.Eq(Eq((==)))
@@ -54,8 +54,6 @@ import System.FilePath(takeDirectory, (</>), FilePath)
 import Text.HTML.TagSoup(Tag(TagText))
 import Text.HTML.TagSoup.Tree(TagTree(TagBranch, TagLeaf), parseTree)
 import Text.HTML.TagSoup.Tree.Zipper(TagTreePos(TagTreePos), fromTagTree, traverseTree)
-
-import Data.Digest.SHA1(Word160(Word160))
 
 data AipRecords =
   AipRecords
@@ -200,8 +198,7 @@ getAipRecords cch dir =
       trimSpaces =
           dropWhile isSpace
   in  do  c <- requestAipContents
-          {- todo -}  
-          let h = (SHA1 (Word160 2406228636 3681190974 2723189999 416050933 180416371))  -- hash (UTF8.encode (c ^. aipContentsBody))
+          let h = hash (UTF8.encode (c ^. aipContentsBody))
           let h' = hashHex h
           aiplog ("aip contents, sha1: " <> h' "")
           let z = dir </> h' ".json"

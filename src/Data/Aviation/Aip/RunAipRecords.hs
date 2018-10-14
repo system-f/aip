@@ -51,7 +51,7 @@ run k (OnAipRecords l) =
                 x <- getAipRecords cch dir'
                 let h = dir' </> view (_GetSHA1 . re strHash) x
                 de <- liftIO $ doesDirectoryExist h
-                let dl = mapMOf_ _ManyHref (\c -> w c dir h) (aipPrefix x)
+                let dl = mapMOf_ _ManyHref (\c -> w c dir h aiplog) (aipPrefix x)
                 catchIOException
                   (do de `unless` dl
                       pure (Right (h, x)))
@@ -75,4 +75,4 @@ run k (OnAipRecords l) =
               do  when lg (aiplog' ("network or HTTP error " <> show e'))
                   exitWith (ExitFailure 1)
             Right r ->
-              l r dir
+              l r aiplog' dir
