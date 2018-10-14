@@ -16,7 +16,7 @@ import Data.Aviation.Aip.AipRecords(AipRecords, getAipRecords)
 import Data.Aviation.Aip.Cache(Cache)
 import Data.Aviation.Aip.Href(ManyHref(_ManyHref), aipPrefix)
 import Data.Aviation.Aip.Log(aiplog, aiplog')
-import Data.Aviation.Aip.OnAipRecords
+import Data.Aviation.Aip.OnAipRecords(OnAipRecords(OnAipRecords), OnAipRecordsIO)
 import Data.Aviation.Aip.PerHref(PerHref(PerHref), PerHrefAipCon)
 import Data.Aviation.Aip.SHA1(_GetSHA1, strHash)
 import Data.Either(Either(Left, Right))

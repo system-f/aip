@@ -89,39 +89,14 @@ latestLink =
 
 followLinks ::
   FilePath
-  -> IO (Maybe FilePath)
-followLinks p =
-  let plusM :: IO (Maybe FilePath) -> IO (Maybe FilePath) -> IO (Maybe FilePath)
-      plusM x y =
-        do  x' <- x
-            case x' of
-              Nothing ->
-                y
-              r@(Just _) ->
-                pure r
-  in  do  q <- getSymbolicLinkTarget' p
-          case q of
-            Nothing ->
-              pure Nothing
-            Just s ->
-              followLinks s `plusM` pure q
-
-followLinks' ::
-  FilePath
   -> IO FilePath
-followLinks' p =
-  let fromMaybeM :: IO a -> IO (Maybe a) -> IO a
-      fromMaybeM x y =
-        do  y' <- y
-            case y' of
-              Nothing ->
-                x
-              Just a ->
-                pure a
-  in  pure p `fromMaybeM` getSymbolicLinkTarget' p
-
--- getSymbolicLinkTarget' :: FilePath -> IO (Maybe FilePath)
--- getSymbolicLinkTarget :: FilePath -> IO FilePath
+followLinks p =
+  do  r <- getSymbolicLinkTarget' p
+      case r of
+        Nothing ->
+          pure p
+        Just s ->
+          followLinks s
 
 archive ::
   [FilePath]
@@ -148,32 +123,36 @@ archive x =
         liftIO $
           (^.. folded . _Just) <$>
           mapM (\d' ->
-            let (b, z) = splitFileName d'
-                arch = b ++ z ++ ".tar.gz"
-            in  do  a <- doesFileExist arch
-                    if a
-                      then
-                        pure Nothing
-                      else
-                        do  t <- doesDirectoryExist d'
-                            if t
-                              then
-                                do  u <- pathIsSymbolicLink d'
-                                    k <- system'
-                                          [
-                                            "tar"
-                                          , "-C"
-                                          , quote b
-                                          , "-czvf"
-                                          , quote arch
-                                          , bool id (++ "/*") u z
-                                          ]
-                                    pure (Just (arch, k))
-                              else
-                                pure Nothing
+            do  d'' <- followLinks d'
+                let (b', z') = splitFileName d''
+                    (b, z) = splitFileName d'
+                    arch = b </> z ++ ".tar.gz"
+                a <- doesFileExist arch
+                if a
+                  then
+                    pure Nothing
+                  else
+                    do  t <- doesDirectoryExist d'
+                        if t
+                          then
+                            do  k <- system'
+                                      [
+                                        "tar"
+                                      , "--transform"
+                                      , quote ("s/" ++ z' ++ "/" ++ z ++ "/")
+                                      , "-C"
+                                      , b'
+                                      , "-czvf"
+                                      , quote arch
+                                      , z'
+                                      ]
+                                pure (Just (arch, k))
+                          else
+                            pure Nothing
           ) d
   in  do  d <- downloaddirOnAipRecords
-          mapM (\d' -> targz ([
+          mapM (\d' -> targz (x ++
+                                [
                                   d'
                                 , d' </> "aip" </> "current"
                                 , d' </> "aip" </> "current" </> "aip"
@@ -201,7 +180,7 @@ archive x =
                                 , d' </> "aip" </> "pending" </> "ersa"
                                 , d' </> "aip" </> "pending" </> "sup"
                                 , d' </> "aip" </> "pending" </> "SUP_AIP_Summary"
-                                ] ++ x)) d
+                                ])) d
 
 timeLink ::
   OnAipRecordsIO [FilePath]
