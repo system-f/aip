@@ -35,7 +35,7 @@ import Data.Foldable(toList, and, all)
 import Data.Function(($))
 import Data.Functor((<$), (<$>))
 import Data.List(intercalate, dropWhile, reverse, drop)
-import Data.Maybe(Maybe(Nothing, Just), maybe)
+import Data.Maybe(Maybe(Nothing, Just), maybe, fromMaybe)
 import Data.Ord((<))
 import Data.Semigroup((<>))
 import Data.String(String)
@@ -43,6 +43,7 @@ import Data.Time(UTCTime(UTCTime), toGregorian)
 import Data.Traversable(mapM)
 import Prelude(Integer, show, round, (*))
 import System.Directory(createDirectoryLink, getSymbolicLinkTarget, doesFileExist, doesDirectoryExist, createDirectoryIfMissing, removeFile)
+import System.Environment(lookupEnv)
 import System.Exit(ExitCode)
 import System.FilePath(FilePath, splitDirectories, isPathSeparator, joinPath, (</>), takeDirectory, splitFileName, makeRelative, splitPath)
 import System.IO(IO)
@@ -173,9 +174,10 @@ archive x =
                     do  t <- doesDirectoryExist d'
                         if t
                           then
-                            do  k <- system'
+                            do  tar <- lookupEnv "TAR_EXE"
+                                k <- system'
                                       [
-                                        "tar"
+                                        fromMaybe "tar" tar
                                       , "--transform"
                                       , quote ("s/" <> z' <> "/" <> z <> "/")
                                       , "-C"
