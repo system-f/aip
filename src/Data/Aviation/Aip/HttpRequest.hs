@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE CPP #-}
 
 module Data.Aviation.Aip.HttpRequest(
   aipRequestGet
@@ -21,18 +20,16 @@ import Network.HTTP(HandleStream, getAuth, openStream, host, normalizeRequest, d
 import qualified Data.ByteString.Lazy as LazyByteString(writeFile)
 import Control.Monad.Trans.Except(ExceptT(ExceptT))
 import Data.Aviation.Aip.AipCon(AipCon(AipCon))
+import Data.Aviation.Aip.AipContents
 import Data.Aviation.Aip.Log(aiplog)
 import Data.Aviation.Aip.ConnErrorHttp4xx(ConnErrorHttp4xx(IsConnError, Http4xx))
-import Data.Aviation.Aip.Href(Href(Href))
-import Data.Aviation.Aip.PerHref
+import Data.Aviation.Aip.Href(Href(Href), windows_replace)
+import Data.Aviation.Aip.PerHref(PerHref(PerHref))
 import Data.Bool(Bool(True), bool)
 import Data.Either(Either(Left, Right))
 import Data.Eq(Eq((==)))
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-import Data.Foldable(elem)
-import Data.Functor((<$>))
-#endif
 import Data.Function(($))
+import Data.Functor((<$>))
 import Data.List(isPrefixOf, dropWhile)
 import Data.Maybe(Maybe(Just))
 import Data.Semigroup(Semigroup((<>)))
@@ -126,17 +123,19 @@ doPostRequest s z =
   doRequest (aipRequestPost s z)
 
 requestAipContents ::
-  AipCon String
+  AipCon AipContents
 requestAipContents =
-  let r = setRequestBody
-            (aipRequestPost (Href "aip.asp") "?pg=10")
+  let path = "aip.asp"
+      query = "?pg=10"
+      r = setRequestBody
+            (aipRequestPost (Href path) query)
             ("application/x-www-form-urlencoded", "Submit=I+Agree&check=1")
-  in  doRequest r
+  in  AipContents path query <$> doRequest r
 
 downloadHref ::
   PerHref AipCon FilePath
 downloadHref =
-  PerHref $ \hf d ->
+  PerHref $ \hf _ d' _ ->
   do  let q = aipRequestGet hf ""
       aiplog ("making request for aip document " <> show q)
       auth <- getAuth q
@@ -144,19 +143,11 @@ downloadHref =
       c <- liftIO $ openStream (host auth) 80
       r <- doRequest' (normalizeRequest defaultNormalizeRequestOptions q) c
       let (j, k) = splitFileName (hf ^. _Wrapped)
-      let ot = d </> dropWhile isPathSeparator j
+      let ot = d' </> dropWhile isPathSeparator j
       aiplog ("output directory for aip document " <> ot)
       do  liftIO $ createDirectoryIfMissing True ot
-          let ot' = ot </> k
-          let otw =
-#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
-                    let win = "/\\:*\"?<>|"
-                        repl ch = bool ch '_' (ch `elem` win)
-                    in  repl <$> ot'
-#else
-                    ot'
-#endif                    
+          let otw = ot </> windows_replace k
           aiplog ("writing aip document " <> otw)
           liftIO $ LazyByteString.writeFile otw r
           liftIO $ close c
-          pure ot'
+          pure otw

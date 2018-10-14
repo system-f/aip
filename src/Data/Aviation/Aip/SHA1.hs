@@ -13,7 +13,7 @@ module Data.Aviation.Aip.SHA1(
 , hash
 , hashHex
 , showsHash
-, showHash
+, strHash
 ) where
 
 import Control.Category((.), id)
@@ -24,10 +24,11 @@ import Data.Digest.SHA1(Word160(Word160))
 import qualified Data.Digest.SHA1 as SHA1(hash, toInteger)
 import Data.Eq(Eq)
 import Data.Functor((<$>))
+import Data.Maybe(Maybe(Nothing))
 import Data.String(String)
-import Data.Word(Word8)
-import Numeric(showHex)
-import Prelude(Show, ShowS)
+import Data.Word(Word8, Word32)
+import Numeric(showHex, readHex)
+import Prelude(Show, ShowS, ReadS)
 
 newtype SHA1 =
   SHA1
@@ -145,9 +146,23 @@ showsHash ::
 showsHash x =
   hashHex (x ^. sha1)
 
-showHash ::
-  HasSHA1 s =>
-  s
-  -> String
-showHash x =
-  showsHash x ""
+strHash ::
+  Prism'
+    String
+    SHA1
+strHash =
+  prism'
+    (\x -> showsHash x "")
+    (\h ->  case h of
+              (a0:a1:a2:a3:a4:a5:a6:a7:b0:b1:b2:b3:b4:b5:b6:b7:c0:c1:c2:c3:c4:c5:c6:c7:d0:d1:d2:d3:d4:d5:d6:d7:e0:e1:e2:e3:e4:e5:e6:e7:[]) ->
+                let word32 w = 
+                      (readHex :: ReadS Word32) w ^? _head . _1
+                in  do  w1 <- word32 [a0,a1,a2,a3,a4,a5,a6,a7]
+                        w2 <- word32 [b0,b1,b2,b3,b4,b5,b6,b7]
+                        w3 <- word32 [c0,c1,c2,c3,c4,c5,c6,c7]
+                        w4 <- word32 [d0,d1,d2,d3,d4,d5,d6,d7]
+                        w5 <- word32 [e0,e1,e2,e3,e4,e5,e6,e7]
+                        pure (SHA1 (Word160 w1 w2 w3 w4 w5))
+              _ ->
+                Nothing)
+    

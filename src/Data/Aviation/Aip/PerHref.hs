@@ -9,7 +9,12 @@ module Data.Aviation.Aip.PerHref(
 , nothingPerHref
 , hrefPerHref
 , basedirPerHref
+, downloaddirPerHref
+, logPerHref
+, logeachPerHref
+, logShowPerHref
 , PerHrefAipCon
+, PerHrefIO
 ) where
 
 import Control.Category((.))
@@ -24,54 +29,57 @@ import Data.Functor(Functor(fmap))
 import Data.Functor.Alt(Alt((<!>)))
 import Data.Functor.Apply(Apply((<.>)))
 import Data.Functor.Bind(Bind((>>-)))
+import Data.String(String)
+import Prelude(Show(show))
 import System.FilePath(FilePath)
 import System.IO(IO)
 
 newtype PerHref f a =
   PerHref
-    (Href -> FilePath -> f a)
+    (Href -> FilePath -> FilePath -> (String -> AipCon ()) -> f a)
 
 instance Functor f => Functor (PerHref f) where
   fmap f (PerHref x) =
-    PerHref (\h d -> fmap f (x h d))
+    PerHref (\h d d' l -> fmap f (x h d d' l))
 
 instance Apply f => Apply (PerHref f) where
   PerHref f <.> PerHref a =
-    PerHref (\h d -> f h d <.> a h d)
+    PerHref (\h d d' l -> f h d d' l <.> a h d d' l)
 
 instance Applicative f => Applicative (PerHref f) where
   pure =
-    PerHref . pure . pure . pure
+    PerHref . pure . pure . pure . pure . pure
+
   PerHref f <*> PerHref a =
-    PerHref (\h d -> f h d <*> a h d)
+    PerHref (\h d d' l -> f h d d' l <*> a h d d' l)
 
 instance Bind f => Bind (PerHref f) where
   PerHref x >>- f =
-    PerHref (\h d -> x h d >>- \a -> let g = f a ^. _Wrapped in g h d)
+    PerHref (\h d d' l -> x h d d' l >>- \a -> let g = f a ^. _Wrapped in g h d d' l)
 
 instance Monad f => Monad (PerHref f) where
   return =
     pure
   PerHref x >>= f =
-    PerHref (\h d -> x h d >>= \a -> let g = f a ^. _Wrapped in g h d)
+    PerHref (\h d d' l -> x h d d' l >>= \a -> let g = f a ^. _Wrapped in g h d d' l)
 
 instance Alt f => Alt (PerHref f) where
   PerHref x <!> PerHref y =
-    PerHref (\h d -> x h d <!> y h d)
+    PerHref (\h d d' l -> x h d d' l <!> y h d d' l)
 
 instance Alternative f => Alternative (PerHref f) where
   PerHref x <|> PerHref y =
-    PerHref (\h d -> x h d <|> y h d)
+    PerHref (\h d d' l -> x h d d' l <|> y h d d' l)
   empty =
-    (PerHref . pure . pure) empty
+    (PerHref . pure . pure . pure . pure) empty
 
 instance MonadTrans PerHref where
   lift =
-    PerHref . pure . pure
+    PerHref . pure . pure . pure . pure
 
 instance MonadIO f => MonadIO (PerHref f) where
   liftIO =
-    PerHref . pure . pure . liftIO
+    PerHref . pure . pure . pure . pure . liftIO
 
 instance PerHref f a ~ x =>
   Rewrapped (PerHref g k) x
@@ -80,6 +88,8 @@ instance Wrapped (PerHref f k) where
   type Unwrapped (PerHref f k) =
       Href
       -> FilePath
+      -> FilePath
+      -> (String -> AipCon ())
       -> f k
   _Wrapped' =
     iso
@@ -88,10 +98,10 @@ instance Wrapped (PerHref f k) where
 
 ioPerHref ::
   MonadIO f =>
-  (Href -> FilePath -> IO a)
+  (Href -> FilePath -> FilePath -> (String -> AipCon ()) -> IO a)
   -> PerHref f a
 ioPerHref k =
-  PerHref (\h p -> liftIO (k h p))
+  PerHref (\h d d' l -> liftIO (k h d d' l))
 
 nothingPerHref ::
   Applicative f =>
@@ -103,13 +113,50 @@ hrefPerHref ::
   Applicative f =>
   PerHref f Href
 hrefPerHref =
-  PerHref (\h _ -> pure h)
+  PerHref (\h _ _ _ -> pure h)
 
 basedirPerHref ::
   Applicative f =>
   PerHref f FilePath
 basedirPerHref =
-  PerHref (\_ d -> pure d)
+  PerHref (\_ d _ _ -> pure d)
+
+downloaddirPerHref ::
+  Applicative f =>
+  PerHref f FilePath
+downloaddirPerHref =
+  PerHref (\_ _ d' _ -> pure d')
+
+logPerHref ::
+  Applicative f =>
+  PerHref f (String -> AipCon ())
+logPerHref =
+  PerHref (\_ _ _ l -> pure l)
 
 type PerHrefAipCon a =
   PerHref AipCon a
+
+type PerHrefIO a =
+  PerHref IO a
+
+logeachPerHref ::
+  PerHrefAipCon ()
+logeachPerHref =
+  PerHref (\h d d' l ->
+    let l' ::
+          Show a =>
+          a
+          -> AipCon ()
+        l' =
+          l . show
+    in  do  l' h
+            l' d
+            l' d')
+
+logShowPerHref ::
+  Show a =>
+  a
+  -> PerHrefAipCon ()
+logShowPerHref z =
+  do  l <- logPerHref
+      lift (l (show z))

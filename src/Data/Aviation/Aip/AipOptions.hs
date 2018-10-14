@@ -5,7 +5,6 @@ module Data.Aviation.Aip.AipOptions(
 , aipOptionOutputDirectory
 , aipOptionCache
 , aipOptionLog
-, aipOptionVerbose
 , parserAipOptions
 ) where
 
@@ -27,28 +26,22 @@ data AipOptions =
     FilePath
     Cache
     Bool -- log
-    Bool -- verbose
   deriving (Eq, Ord, Show)
 
 aipOptionOutputDirectory ::
   Lens' AipOptions FilePath
-aipOptionOutputDirectory k (AipOptions d c l v) =
-  fmap (\d' -> AipOptions d' c l v) (k d)
+aipOptionOutputDirectory k (AipOptions d c l) =
+  fmap (\d' -> AipOptions d' c l) (k d)
 
 aipOptionCache ::
   Lens' AipOptions Cache
-aipOptionCache k (AipOptions d c l v) =
-  fmap (\c' -> AipOptions d c' l v) (k c)
+aipOptionCache k (AipOptions d c l) =
+  fmap (\c' -> AipOptions d c' l) (k c)
 
 aipOptionLog ::
   Lens' AipOptions Bool
-aipOptionLog k (AipOptions d c l v) =
-  fmap (\l' -> AipOptions d c l' v) (k l)
-
-aipOptionVerbose ::
-  Lens' AipOptions Bool
-aipOptionVerbose k (AipOptions d c l v) =
-  fmap (\v' -> AipOptions d c l v') (k v)
+aipOptionLog k (AipOptions d c l) =
+  fmap (\l' -> AipOptions d c l') (k l)
 
 parserAipOptions ::
   Parser AipOptions
@@ -84,11 +77,4 @@ parserAipOptions =
         long "log" <>
         short 'l' <>
         help "log to standard output"
-      )
-    <*>
-    switch
-      (
-        long "verbose" <>
-        short 'v' <>
-        help "print the AIP document tree after download"
       )

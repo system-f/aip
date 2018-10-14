@@ -4,10 +4,10 @@ module Main(
   main
 ) where
 
-import Data.Aviation.Aip(run, downloadHref)
+import Data.Aviation.Aip
 import System.IO(IO)
 
 main ::
   IO ()
 main =
-  run downloadHref
+  run defaultPerHref defaultOnAipRecords

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Aviation.Aip.Href(
   Href(..)
@@ -15,6 +16,7 @@ module Data.Aviation.Aip.Href(
 , IsHref(..)
 , dropHrefFile
 , aipPrefix
+, windows_replace
 ) where
 
 import Control.Category((.), id)
@@ -24,6 +26,10 @@ import Data.Aeson(FromJSON(parseJSON), ToJSON(toJSON))
 import Data.Bool(bool)
 import Data.Char(Char)
 import Data.Eq(Eq((/=)))
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+import Data.Eq((==))
+import Data.Foldable(elem, foldr)
+#endif
 import Data.Functor((<$>))
 import Data.Int(Int)
 import Data.List(reverse, dropWhile, isPrefixOf)
@@ -220,3 +226,36 @@ aipPrefix ::
   -> s
 aipPrefix =
   _ManyHref . _Wrapped %~ let p = "/aip/" in bool <$> (p <>) <*> id <*> isPrefixOf p
+
+-- |
+--
+-- >>> windows_replace ""
+-- ""
+--
+-- >>> windows_replace "abc"
+-- "abc"
+--
+-- >>> windows_replace "abc/def"
+-- "abc\\def"
+--
+-- >>> windows_replace "abc/def\\ghi"
+-- "abc\\def_ghi"
+--
+-- >>> > windows_replace "abc\\def/ghi"
+-- "abc_def\\ghi"
+windows_replace ::
+  String
+  -> String
+windows_replace x = 
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+  let 
+      win = [
+              ((== '/'), '\\')
+            , ((`elem` "\\:*\"?<>|"), '_')
+            ]
+      repl =
+        (\ch -> foldr (\(p, ch') c -> bool c ch' (p c)) ch win)
+  in  repl <$> x
+#else
+  x
+#endif

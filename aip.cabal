@@ -1,5 +1,5 @@
 name:               aip
-version:            0.1.0
+version:            0.1.1
 license:            BSD3
 license-file:       LICENCE
 author:             Queensland Functional Programming Lab <oᴉ˙ldɟb@llǝʞsɐɥ>
@@ -31,7 +31,7 @@ library
                     , aeson-pretty >= 0.8 && < 0.9
                     , bytestring >= 0.10 && < 0.11
                     , Crypto >= 4.2.5.1 && < 4.3
-                    , directory >= 1.3 && < 1.4
+                    , directory >= 1.3.1 && < 1.4
                     , exceptions >= 0.10.0 && < 1
                     , filepath >= 1.4 && < 1.5
                     , HTTP >= 4000 && < 5000
@@ -40,6 +40,7 @@ library
                     , parsec >= 3.1 && < 3.2
                     , parsers >= 0.12 && < 0.13
                     , network-uri >= 2.6 && < 3
+                    , process >= 1.6 && < 1.7
                     , semigroups >= 0.9 && < 0.19
                     , semigroupoids >= 5.2 && < 6
                     , tagsoup >= 0.13 && < 0.15
@@ -64,6 +65,7 @@ library
                     Data.Aviation.Aip.Aip_SUP_and_AIC
                     Data.Aviation.Aip.Aip_SUP_and_AICs
                     Data.Aviation.Aip.AipCon
+                    Data.Aviation.Aip.AipContents
                     Data.Aviation.Aip.AipDate
                     Data.Aviation.Aip.AipDocument
                     Data.Aviation.Aip.AipDocuments
@@ -88,7 +90,10 @@ library
                     Data.Aviation.Aip.ListItemLinks
                     Data.Aviation.Aip.ListItemLinks1
                     Data.Aviation.Aip.Log
+                    Data.Aviation.Aip.OnAipRecords
                     Data.Aviation.Aip.PerHref
+                    Data.Aviation.Aip.Processing
+                    Data.Aviation.Aip.RunAipRecords
                     Data.Aviation.Aip.SHA1
                     Data.Aviation.Aip.Title
                     Data.Aviation.Aip.Txt
@@ -104,7 +109,7 @@ executable          aip
   build-depends:
                     base >= 4.8 && < 5
                     , aip
-                    
+
   ghc-options:
                     -Wall
 
