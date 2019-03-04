@@ -1,3 +1,7 @@
+0.1.2
+
+* Fix bug where DAH was left out of href downloads.
+
 0.1.1
 
 * Add post-processing after downloading AIP.
