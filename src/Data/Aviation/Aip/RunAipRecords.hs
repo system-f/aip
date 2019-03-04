@@ -63,7 +63,7 @@ run k (OnAipRecords l) =
         execParser
           (info (parserAipOptions <**> helper) (
             fullDesc <>
-            header "aip 0.1.1 <http://www.airservicesaustralia.com/aip/aip.asp>"
+            header "aip 0.1.3 <http://www.airservicesaustralia.com/aip/aip.asp>"
           )
         )
   in  do  opts <- p
