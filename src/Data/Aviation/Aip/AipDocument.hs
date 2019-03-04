@@ -404,8 +404,8 @@ instance (ManyHref book, ManyHref charts, ManyHref sup_aic, ManyHref dap, ManyHr
     Aip_SUP_AIC <$> f u <*> _ManyHref f c
   _ManyHref f (Aip_DAP u d c) =
     Aip_DAP <$> f u <*> pure d <*> _ManyHref f c
-  _ManyHref _ (Aip_DAH u c) =
-    Aip_DAH <$> pure u <*> pure c
+  _ManyHref f (Aip_DAH u c) =
+    Aip_DAH <$> f u <*> pure c
   _ManyHref f (Aip_ERSA u d b) =
     Aip_ERSA <$> f u <*> pure d <*> _ManyHref f b
   _ManyHref _ (Aip_AandB_Charts d) =
